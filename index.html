@@ -1597,6 +1597,12 @@ function addSearchToHistory(query) {
     saveSearchHistory();
 }
 
+function clearSearchHistory() {
+    state.searchHistory = [];
+    saveSearchHistory();
+    renderSearchHistory();
+}
+
 function renderSearchHistory() {
     const container = document.getElementById('globalSearchHistoryContainer');
     container.innerHTML = '';
@@ -1608,7 +1614,7 @@ function renderSearchHistory() {
 
     state.searchHistory.forEach(query => {
         const item = document.createElement('div');
-        item.className = 'dropdown-item history-item';
+        item.className = 'history-item';
         item.textContent = query;
 
         item.addEventListener('mousedown', (e) => {
@@ -1620,9 +1626,24 @@ function renderSearchHistory() {
         });
         container.appendChild(item);
     });
+
+    const footer = document.createElement('div');
+    footer.className = 'search-history-footer';
+    
+    const clearBtn = document.createElement('button');
+    clearBtn.id = 'clearSearchHistoryBtn';
+    clearBtn.textContent = '清空搜索历史';
+    
+    clearBtn.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        clearSearchHistory();
+    });
+    
+    footer.appendChild(clearBtn);
+    container.appendChild(footer);
+
     container.classList.remove('hidden');
 }
-
 
 
 
