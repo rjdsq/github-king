@@ -5496,34 +5496,63 @@ body.light-theme .repo-details-meta strong {
 
 
 
-/* --- 搜索历史记录 (简约居中版) --- */
+/* --- 搜索历史记录 (功能增强版) --- */
 
-/* 容器基础样式 */
 #globalSearchHistoryContainer {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin-top: 6px;
     background-color: #111827;
     border: 1px solid #374151;
     border-radius: 0.4rem;
-    padding: 0.3rem 0; /* 给容器一点上下内边距 */
-    
-    text-align: center; 
-    max-height:280px;
+    padding-top: 0.3rem;
+    z-index: 10;
+    max-height: 280px;
     overflow-y: auto;
-    
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 /* 历史记录条目样式 */
-#globalSearchHistoryContainer .dropdown-item {
-    text-align: center;     /* 核心要求：文字居中 */
-    padding: 0.7rem 1rem;   /* 核心要求：增加上下间距 (0.7rem)，并保留一些左右边距 */
-    color: #f3f4f6;
+#globalSearchHistoryContainer .history-item {
+    text-align: center;
+    padding: 0.7rem 1rem;
+    color: #d1d5db;
+    font-size: 0.8rem;
+    cursor: pointer;
     transition: background-color 0.2s ease;
 }
 
 /* 悬停效果 */
-#globalSearchHistoryContainer .dropdown-item:hover {
+#globalSearchHistoryContainer .history-item:hover {
     background-color: rgba(107, 114, 128, 0.1);
 }
 
+/* 新增: 清空历史记录按钮容器 */
+.search-history-footer {
+    padding: 0.5rem 1rem;
+    text-align: center;
+    border-top: 1px solid #374151;
+    margin-top: 0.3rem;
+    
+}
+
+/* 新增: 清空按钮 */
+#clearSearchHistoryBtn {
+    background-color: green;
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    font-size: 0.7rem;
+    
+    padding:0.3rem;
+    
+    
+}
+#clearSearchHistoryBtn:hover {
+    color: #60a5fa;
+}
 
 /* --- 亮色主题适配 --- */
 body.light-theme #globalSearchHistoryContainer {
@@ -5532,10 +5561,23 @@ body.light-theme #globalSearchHistoryContainer {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
-body.light-theme #globalSearchHistoryContainer .dropdown-item {
+body.light-theme #globalSearchHistoryContainer .history-item {
     color: #1f2937;
 }
 
-body.light-theme #globalSearchHistoryContainer .dropdown-item:hover {
+body.light-theme #globalSearchHistoryContainer .history-item:hover {
     background-color: #f3f4f6;
+}
+
+body.light-theme .search-history-footer {
+    border-top-color: #e5e7eb;
+}
+
+body.light-theme #clearSearchHistoryBtn {
+    color: #6b7280;
+    background-color: #fff;
+}
+
+body.light-theme #clearSearchHistoryBtn:hover {
+    color: #4f46e5;
 }
