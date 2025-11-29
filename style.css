@@ -1,0 +1,6127 @@
+/**
+ * ==============================================
+ * GitHub 仓库管理器 - 优化版样式 (暗色主题)
+ * ==============================================
+ */
+
+/** ---------------- Z-INDEX 层级管理 ---------------- */
+/*
+ *  -1: 背景粒子
+ *   1: 下拉刷新指示器
+ *   2: 网格视图图片信息遮罩、缩略图加载器
+ *   3: 多选复选框
+ *   5: 工具栏、页脚
+ *  10: 头部、编辑器遮罩、搜索输入框
+ *  15: 多选操作栏、编辑器搜索面板
+ *  20: 全局加载动画遮罩
+ *  30: 自定义下拉菜单
+ *  50: 右键菜单、主菜单弹窗
+ * 100: 通用模态框遮罩
+ * 120: 文件编辑器模态框
+ * 130: 删除/重命名模态框
+ * 190: API状态面板遮罩
+ * 200: Toast通知、上传面板、API状态面板
+ * 9999: 媒体预览
+ */
+
+/** ---------------- 全局与通用样式 ---------------- */
+
+/** 所有元素通用重置 */
+* {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+    outline: 0;
+}
+
+
+html.light-theme-loading body {
+    background: #f0f2f5 !important;
+    color: #1f2937 !important;
+    transition: none !important;
+}
+
+html.light-theme-loading .modal-overlay {
+    background-color: rgba(0, 0, 0, 0.6) !important;
+    backdrop-filter: blur(4px) !important;
+}
+
+/** 页面主体 */
+body {
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    font-family: Arial, sans-serif;
+    color: #f3f4f6;
+    background: radial-gradient(ellipse at bottom, #1b2c4f 0, #04091a 100%);
+    transition: background-image 1s ease-in-out;
+}
+
+/** 认证屏幕与应用主容器（初始状态） */
+#authScreen,
+#app {
+    visibility: hidden;
+    opacity: 0;
+}
+
+/** 认证屏幕加载完成时可见 */
+.auth-visible-loading #authScreen {
+    visibility: visible;
+    opacity: 1;
+}
+
+/** 应用加载完成时可见 */
+.app-visible-loading #app {
+    visibility: visible;
+    opacity: 1;
+}
+
+/** 隐藏元素工具类 */
+.hidden {
+    display: none !important;
+}
+
+
+
+/** 背景粒子画布 */
+#particle-canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: -1;
+    width: 100vw;
+    height: 100vh;
+    opacity: 0.7;
+}
+
+/** ---------------- 布局与主要容器 ---------------- */
+
+/** 应用主容器 */
+#app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+/** 页头 */
+header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    padding: 0.4rem 0.7rem;
+    backdrop-filter: blur(2px);
+    box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2), -1px -1px 3px rgba(75, 85, 99, 0.05);
+}
+
+/** 主内容区域 */
+main {
+    position: relative;
+    flex: 1;
+    overflow-y: auto;
+    padding-bottom: 60px;
+}
+
+
+/** 文件工具栏 */
+#toolbar {
+    position: relative;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    flex-shrink: 0;
+    padding: 0 1rem;
+    border-bottom: 1px solid #1f2937;
+}
+
+/** 页脚 */
+
+
+/** ---------------- 认证屏幕 ---------------- */
+
+/** 认证屏幕容器 */
+#authScreen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2rem;
+    min-height: 100vh;
+    padding: 1.5rem;
+    overflow-y: auto;
+}
+
+/** 认证页头 */
+.auth-header {
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+/** 认证页头图标 */
+.auth-header i {
+    margin-bottom: 0.8rem;
+    font-size: 2.5rem;
+    color: #6366f1;
+    text-shadow: 0 0 10px rgba(99, 102, 241, 0.6);
+}
+
+/** 认证页头主标题 */
+.auth-header h1 {
+    margin-bottom: 0.4rem;
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #e0e7ff;
+    letter-spacing: 0.05em;
+}
+
+/** 认证页头段落 */
+.auth-header p {
+    max-width: 280px;
+    margin: 0 auto;
+    font-size: 0.8rem;
+    line-height: 1.4;
+    color: #a2a7c7;
+}
+
+/** 登录区域容器 */
+.login-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    width: 100%;
+    max-width: 320px;
+}
+
+/** 认证表单 */
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    width: 100%;
+    max-width: 320px;
+    padding: 1.5rem;
+    background: rgba(17, 24, 39, 0.95);
+    border-radius: 0.6rem;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.08);
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+/** 认证表单悬浮效果 */
+.auth-form:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+
+/** 令牌输入框 */
+#tokenInput {
+    padding: 0.6rem 0.8rem;
+    font-size: 0.9rem;
+    color: #e0e7ff;
+    background-color: #0b1220;
+    border: 1px solid #374151;
+    border-radius: 0.4rem;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+/** 令牌输入框占位符 */
+#tokenInput::placeholder {
+    color: #7b859a;
+}
+
+/** 令牌输入框聚焦效果 */
+#tokenInput:focus {
+    border-color: #0ea5e9;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4), 0 0 0 2px rgba(14, 165, 233, 0.3);
+}
+
+/** 令牌输入框错误状态 */
+#tokenInput.error {
+    border-color: #ef4444;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4), 0 0 0 2px rgba(239, 68, 68, 0.3);
+}
+
+/** 认证按钮容器 */
+.auth-buttons-container {
+    display: flex;
+    gap: 0.8rem;
+    width: 100%;
+}
+
+/** 认证/登录按钮 */
+#authBtn,
+.auth-button {
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+    margin-top: 0.8rem;
+    padding: 0.7rem 1rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #fff;
+    text-align: center;
+    white-space: nowrap;
+    text-decoration: none;
+    letter-spacing: 0.03em;
+    background: linear-gradient(90deg, #6366f1, #0ea5e9);
+    border: none;
+    border-radius: 0.4rem;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+/** 认证/登录按钮悬浮效果 */
+#authBtn:hover,
+.auth-button:hover {
+    transform: translateY(-2px);
+    background: linear-gradient(90deg, #0ea5e9, #6366f1);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.7);
+}
+
+/** 认证/登录按钮激活效果 */
+#authBtn:active,
+.auth-button:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+}
+
+/** 认证按钮内文本 */
+#authBtn span,
+#getTokenBtn span {
+    display: inline-block;
+    vertical-align: middle;
+}
+
+/** 认证按钮内图标 */
+#authBtn i,
+#getTokenBtn i {
+    margin-left: 0.5rem;
+    vertical-align: middle;
+}
+
+/** 认证按钮成功状态 */
+#authBtn.success {
+    background: linear-gradient(90deg, #16a34a, #22c55e);
+    box-shadow: 0 4px 12px rgba(34, 197, 94, 0.4);
+}
+
+/** 认证按钮错误状态（抖动） */
+#authBtn.error {
+    animation: shake 0.5s ease-in-out;
+}
+
+/** 令牌获取指南容器 */
+.token-instructions {
+    width: 100%;
+    max-width: 320px;
+    padding: 1rem 1.2rem;
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    user-select: text;
+    background-color: rgba(30, 41, 59, 0.5);
+    border-left: 3px solid #4CAF50;
+    border-radius: 4px;
+}
+
+/** 令牌获取指南标题 */
+.token-instructions h4 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0;
+    font-size: 0.86rem;
+    font-weight: 600;
+    color: #e0e7ff;
+}
+
+/** 令牌获取指南可折叠标题 */
+.token-instructions h4.lp {
+    width: 100%;
+    cursor: pointer;
+}
+
+/** 令牌获取指南折叠图标 */
+.token-instructions h4.lp .fa-chevron-down {
+    margin-left: auto;
+    transition: transform 0.3s ease;
+}
+
+/** 令牌获取指南展开状态的图标 */
+.token-instructions h4.lp.active .fa-chevron-down {
+    transform: rotate(180deg);
+}
+
+/** 令牌获取指南折叠内容 */
+.token-content {
+    max-height: 0;
+    overflow: hidden;
+    padding: 0 16px;
+    transition: max-height 0.3s ease, padding 0.3s ease;
+}
+
+/** 令牌获取指南展开状态内容 */
+.token-content.active {
+    max-height: 500px;
+    padding: 16px;
+}
+
+/** 令牌获取指南有序列表 */
+.token-instructions ol {
+    margin: 0;
+    padding-left: 0;
+    list-style: none;
+    counter-reset: step-counter;
+}
+
+/** 令牌获取指南列表项 */
+.token-instructions ol > li {
+    position: relative;
+    margin-bottom: 1rem;
+    padding-left: 2rem;
+    font-size: 0.75rem;
+    line-height: 1.6;
+    color: #a2a7c7;
+}
+
+/** 令牌获取指南列表项自定义数字 */
+.token-instructions ol > li::before {
+    content: counter(step-counter);
+    counter-increment: step-counter;
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    font-size: 0.6rem;
+    font-weight: bold;
+    color: #fff;
+    background-color: #4CAF50;
+    border-radius: 50%;
+}
+
+/** 令牌获取指南补充说明 */
+.token-instructions small {
+    display: block;
+    margin-top: 0.4rem;
+    padding-left: 0.5rem;
+    font-size: 0.7rem;
+    color: #7b859a;
+    border-left: 2px solid #4b5563;
+}
+
+/** 令牌获取指南无序列表 */
+.token-instructions ul {
+    margin-top: 0.5rem;
+    padding-left: 0.5rem;
+    list-style-type: none;
+}
+
+/** 令牌获取指南无序列表项 */
+.token-instructions ul li {
+    position: relative;
+    margin-bottom: 0.3rem;
+    padding-left: 1.2rem;
+}
+
+/** 令牌获取指南无序列表项自定义符号 */
+.token-instructions ul li::before {
+    content: '✓';
+    position: absolute;
+    left: 0;
+    font-weight: bold;
+    color: #4CAF50;
+}
+
+/** 令牌获取指南关键字 */
+.token-instructions strong {
+    font-weight: 600;
+    color: #6366f1;
+}
+
+/** 令牌获取指南底部提示 */
+.token-instructions .instructions-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin-top: 1.2rem;
+    padding: 0.8rem;
+    font-size: 0.7rem;
+    line-height: 1.5;
+    color: #9ca3af;
+    background-color: rgba(55, 65, 81, 0.3);
+    border-radius: 4px;
+}
+
+/** 令牌获取指南底部提示图标 */
+.token-instructions .instructions-note i {
+    margin-top: 0.2rem;
+    color: #0ea5e9;
+}
+
+/** ---------------- 头部与工具栏 ---------------- */
+
+/** 页头左侧容器 */
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    min-width: 0;
+}
+
+/** 页头左侧图标 */
+.header-left i {
+    font-size: 0.9rem;
+    color: #9ca3af;
+}
+
+/** 页头右侧容器 */
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 0.2rem;
+}
+
+/** 当前仓库名称 */
+#currentRepo {
+    flex: 1;
+    overflow: hidden;
+    min-width: 0;
+    font-size: 0.75rem;
+    font-weight: 700;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.header-right { margin-left: auto; }
+
+/** 路径导航 */
+#pathNav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.2rem;
+    padding: 0.3rem 0;
+    font-size: 0.6rem;
+    line-height: 1.4;
+}
+
+/** 路径导航项 */
+#pathNav span {
+    cursor: pointer;
+}
+
+/** 路径导航项悬浮效果 */
+#pathNav span:hover {
+    color: #d1d5db;
+}
+
+/** 主菜单按钮 */
+#mainMenuBtn {
+    padding: 0.3rem;
+    min-width: 36px;
+    min-height: 36px;
+    color: #fff;
+    background: transparent;
+    border: none;
+    border-radius: 9999px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+
+.repo-description {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 10;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: normal;
+    word-break: break-all;
+}
+
+
+/** 主题切换按钮 */
+.header-right #menuThemeToggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    font-size: 0.9rem;
+    color: #f3f4f6;
+    background: transparent;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+/** 主题切换按钮内文本（隐藏） */
+.header-right #menuThemeToggle span {
+    display: none;
+}
+
+/** 工具栏左侧 */
+#toolbar .toolbar-left {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+/** 工具栏右侧 */
+#toolbar .toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+/** 搜索输入框 */
+#searchInput {
+    position: absolute;
+    top: 50%;
+    left: 1rem;
+    right: 12.5rem;
+    z-index: 10;
+    transform: translateY(-50%);
+    display: none;
+    min-width: 50px;
+    padding: 0.2rem 0.4rem;
+    font-size: 0.8rem;
+    color: #f3f4f6;
+    background: #030712;
+    border: 1px solid #374151;
+    border-radius: 0.3rem;
+    outline: 0;
+    transition: 0.2s ease-in-out;
+}
+
+/** ---------------- 主菜单 ---------------- */
+
+/** CSS变量定义 */
+:root {
+    --neon-cyan: #22d3ee;
+    --neon-violet: #a78bfa;
+    --bg-glass: rgba(26, 32, 51, 0.65);
+}
+
+/** 主菜单弹窗 */
+#mainMenuPopup {
+    position: fixed;
+    top: 3.2rem;
+    right: 0.6rem;
+    z-index: 50;
+    transform-origin: top right;
+    border-radius: 0.3rem;
+    overflow: hidden;
+    background-color: var(--bg-glass);
+    backdrop-filter: blur(16px) saturate(180%);
+    border: 1px solid rgba(167, 139, 250, 0.2);
+    box-shadow: 0 0 20px rgba(22, 163, 175, 0.2), 0 4px 30px rgba(0, 0, 0, 0.3);
+    opacity: 0;
+    transform: scale(0.98) translateY(-10px);
+    transition: opacity 0.25s ease-out, transform 0.25s ease-out;
+}
+
+/** 主菜单显示动画 */
+#mainMenuPopup:not(.hidden) {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+}
+
+/** 主菜单用户信息头部 */
+#mainMenuPopup .user-profile-header {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.8rem;
+    border-bottom: none;
+}
+
+/** 主菜单用户信息头部底部分割线 */
+#mainMenuPopup .user-profile-header::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 5%;
+    width: 90%;
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--neon-cyan), transparent);
+}
+
+/** 用户头像容器 */
+#avatarContainer {
+    position: relative;
+    cursor: pointer;
+    transition: filter 0.2s;
+}
+
+/** 用户头像容器悬浮效果 */
+#avatarContainer:hover {
+    filter: brightness(1.2);
+}
+
+/** 用户头像和占位符 */
+#userAvatar,
+#userAvatarPlaceholder {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+}
+
+/** 用户头像 */
+#userAvatar {
+    object-fit: cover;
+    transition: box-shadow 0.3s ease, transform 0.3s ease;
+    box-shadow: 0 0 12px rgba(167, 139, 250, 0.5);
+}
+
+/** 用户头像悬浮效果 */
+#userAvatar:hover {
+    transform: scale(1.08);
+    box-shadow: 0 0 20px rgba(167, 139, 250, 0.8);
+}
+
+/** 用户头像占位符 */
+#userAvatarPlaceholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+}
+
+/** 用户名 */
+#userName {
+    flex: 1;
+    overflow: hidden;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #f0f0f0;
+    text-shadow: 0 0 3px rgba(255, 255, 255, 0.5), 0 0 8px var(--neon-violet);
+}
+
+/** 主菜单项 */
+#mainMenuPopup .menu-items-container button {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    width: 100%;
+    padding: 0.8rem 1.2rem;
+    font-size: 0.85rem;
+    color: #d1d5db;
+    text-align: left;
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/** 主菜单项悬浮效果 */
+#mainMenuPopup .menu-items-container button:hover {
+    color: #ffffff;
+    background: linear-gradient(90deg, rgba(34, 211, 238, 0.1), rgba(167, 139, 250, 0.15));
+}
+
+/** 主菜单项图标 */
+#mainMenuPopup .menu-items-container button i {
+    width: 1.2rem;
+    color: #9ca3af;
+    text-align: center;
+    transition: color 0.3s ease, text-shadow 0.3s ease;
+}
+
+/** 主菜单项图标悬浮效果 */
+#mainMenuPopup .menu-items-container button:hover i {
+    color: var(--neon-cyan);
+    text-shadow: 0 0 6px var(--neon-cyan);
+}
+
+/** ---------------- 文件与仓库列表 ---------------- */
+
+/** 文件与仓库列表容器 */
+#fileList,
+#repoList {
+    padding: 0.5rem;
+    margin: 5px;
+}
+
+/** 列表项（文件/文件夹/仓库） */
+/** 列表项（文件/文件夹/仓库） */
+.file-item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    padding: 0.1rem 1rem;
+    
+    background-color: rgba(17, 24, 39, 0.1); /* 保持原背景 */
+    
+    /* --- 修改这里：暗色主题边框 --- */
+    border: 1px solid rgba(255, 255, 255, 0.15); 
+    /* -------------------------- */
+
+    border-radius: 0.3rem;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+
+/** 列表项悬浮效果 */
+.file-item:hover {
+    background-color: rgba(107, 114, 128, 0.1);
+}
+
+/** 列表项入场动画 */
+.file-item-enter {
+    opacity: 0;
+    animation: itemFadeInUp 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+
+.file-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 1.8rem;
+    height: 1.8rem;
+    border-radius: 0.3rem;
+    margin-right: 1rem;
+}
+
+
+
+
+
+/** 文件图标字体 */
+.file-icon i {
+    font-size: 1rem;
+    color: #e0e7ff;
+}
+
+
+
+
+
+#repoList .file-item .file-icon {
+    position: relative;
+}
+
+.file-icon .repo-avatar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    opacity: 0;
+    transition: opacity 0.4s ease-in-out;
+}
+
+.file-icon .repo-avatar.loaded {
+    opacity: 1;
+}
+
+.file-icon:has(.repo-avatar.loaded) > i {
+    opacity: 0;
+}
+
+#repoList .file-item .file-icon.has-cached-avatar > i.fa-github {
+    opacity: 0;
+}
+
+
+#repoList .file-item .file-icon.is-user-avatar-icon[data-avatar-url] {
+    width: 2rem;
+    height: 2rem;
+}
+
+#repoList .file-item .file-icon[data-avatar-url] .repo-avatar {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 0.4rem;
+}
+
+
+
+#repoList .file-item .file-icon.is-user-avatar-icon[data-avatar-url] {
+    width: 1.9rem;
+    height: 1.9rem;
+}
+
+#repoList .file-item .file-icon.is-user-avatar-icon[data-avatar-url] .repo-avatar {
+    width: 1.9rem;
+    height: 1.9rem;
+    border-radius: 50%;
+}
+
+
+
+
+
+
+/** 文件信息容器 */
+.file-info {
+    flex: 1;
+    min-width: 0;
+}
+
+/** 文件名 */
+.file-name {
+    overflow: hidden;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #e0e7ff;
+    white-space: normal;
+    text-overflow: ellipsis;
+    word-break: break-all;
+    -webkit-line-clamp: 2;
+}
+
+/** 文件元信息 */
+.file-meta {
+    display: -webkit-box;
+    overflow: hidden;
+    margin-top: 0.1rem;
+    font-size: 0.7rem;
+    line-height: 1.3;
+    color: rgba(224, 231, 255, 0.75) !important;
+    text-overflow: ellipsis;
+    -webkit-box-orient: vertical;
+}
+
+/** ---------------- 列表视图缩略图 ---------------- */
+
+/** 列表视图缩略图容器 */
+#fileList .file-thumbnail-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 2.4rem;
+    height: 2.5rem;
+    margin-right: 0.5rem;
+    overflow: hidden;
+    border: 1px solid #374169;
+    border-radius: 0.3rem;
+}
+
+/** 列表视图缩略图 */
+#fileList .file-thumbnail {
+    position: absolute;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    border-radius: 0.3rem;
+    transition: opacity 0.5s ease-out, transform 0.3s ease-out;
+}
+
+/** 列表视图缩略图错误提示 */
+#fileList .thumbnail-error {
+    font-size: 1.2rem;
+    color: #6b7280;
+}
+
+/** 缩略图加载器与错误图标（默认隐藏） */
+.file-thumbnail-container .thumbnail-loader-icon,
+.file-thumbnail-container .thumbnail-error {
+    display: none;
+}
+
+/** 缩略图加载中状态 */
+.file-thumbnail-container.loading .thumbnail-loader-icon {
+    display: block;
+}
+
+/** 缩略图加载错误状态 */
+.file-thumbnail-container.error .thumbnail-error {
+    display: block;
+}
+
+/** ---------------- 网格视图 ---------------- */
+
+/** 文件列表网格视图 */
+#fileList.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)) !important;
+    gap: 0.5rem !important;
+}
+
+/** 网格视图文件项 */
+#fileList.grid .file-item {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 50px;
+    max-height: 90px;
+    padding: 0;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    background-color: transparent;
+    backdrop-filter: blur(1px);
+    border: 1px solid #374169;
+    border-radius: 0.4rem;
+    box-shadow: none;
+    aspect-ratio: 1 / 1;
+    
+}
+
+/** 网格视图空状态 */
+#fileList.grid .empty-state {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    grid-column: 1 / -1;
+    height: 70vh;
+    padding: 0;
+}
+
+/** 网格视图文件图标 */
+#fileList.grid .file-icon {
+    padding-top: 1.6rem;
+    margin-right: 0;
+}
+
+/** 网格视图文件图标字体 */
+#fileList.grid .file-icon i {
+    font-size: 1em;
+}
+
+/** 网格视图文件名 */
+#fileList.grid .file-name {
+    padding: 0 0.3rem;
+    font-size: 0.62rem;
+    line-height: 1.3;
+    max-height: calc(1.3 * 2em);
+    white-space: normal;
+    word-break: break-all;
+    -webkit-box-orient: vertical;
+    display: -webkit-box;
+    overflow: hidden;
+}
+
+/** 网格视图文件元信息 */
+#fileList.grid .file-meta {
+    margin-bottom: 0.9rem;
+    font-size: 0.48rem;
+    color: rgba(224, 231, 255, 0.75) !important;
+    -webkit-line-clamp: 1;
+}
+
+/** 网格视图缩略图错误提示 */
+#fileList.grid .thumbnail-error {
+    font-size: 1rem;
+    color: #6b7280;
+}
+
+/** 网格视图图片项 */
+#fileList.grid .file-item.is-image-grid {
+    position: relative;
+    overflow: hidden;
+}
+
+/** 网格视图图片项缩略图 */
+#fileList.grid .file-item.is-image-grid .file-thumbnail {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    z-index: 2;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    border-radius: 0.3rem;
+}
+
+/** 网格视图图片项缩略图容器 */
+#fileList.grid .file-item.is-image-grid .file-thumbnail-container {
+    position: relative;
+    z-index: 1;
+    flex-grow: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    background-color: rgba(0, 0, 0, 0.2);
+}
+
+/** 网格视图图片项信息 */
+/** 网格视图图片项信息 (优化后) */
+#fileList.grid .file-item.is-image-grid .file-info {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 2;
+    padding: 1rem 0.3rem 0.4rem; /* 调整了内边距，让文字更舒适 */
+    text-align: left;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.75) 20%, transparent 100%); /* 核心修改：使用更强的黑色渐变 */
+    pointer-events: none; /* 允许点击穿透遮罩层直接选中图片 */
+}
+
+/** 网格视图图片项文件名和元信息 (优化后) */
+#fileList.grid .file-item.is-image-grid .file-meta,
+#fileList.grid .file-item.is-image-grid .file-name {
+    color: #fff;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7); /* 增强了文字阴影 */
+}
+
+/** 网格视图图片项文件名 */
+#fileList.grid .file-item.is-image-grid .file-name {
+    margin: 0;
+    padding: 0 0.3rem;
+    font-size: 0.45rem;
+}
+
+/** 网格视图图片项元信息 */
+#fileList.grid .file-item.is-image-grid .file-meta {
+    margin: 0;
+    padding: 2px;
+    font-size: 0.4rem;
+    opacity: 0.9;
+}
+
+/** ---------------- 缩略图加载状态 ---------------- */
+
+/** 缩略图错误图标和加载动画 */
+.thumbnail-error,
+.thumbnail-spinner {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    z-index: 2;
+    transform: translate(-50%, -50%);
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+/** 缩略图状态切换 */
+.file-thumbnail-container.error .thumbnail-error,
+.file-thumbnail-container.loaded .file-thumbnail,
+.file-thumbnail-container.loading .thumbnail-spinner {
+    opacity: 1;
+}
+
+/** 网格视图缩略图加载/错误背景 */
+#fileList.grid .file-thumbnail-container.error,
+#fileList.grid .file-thumbnail-container.loading {
+    background-color: transparent;
+}
+
+/** ---------------- 模态框与遮罩 ---------------- */
+
+/** 通用模态框遮罩 */
+#modalOverlay,
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 80;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    padding: 0.6rem;
+    background-color: rgba(0, 0, 0, 0.1);
+}
+
+/** 模态框内容区 */
+.modal-content {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 90vw;
+    height: 60px;
+    max-height: 90vh;
+    overflow: hidden;
+    border-radius: 0.4rem;
+    box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2), -1px -1px 3px rgba(75, 85, 99, 0.05);
+}
+
+/** 通用遮罩下的模态框内容区 */
+#modalOverlay .modal-content {
+    width: 100%;
+    max-width: 90vw;
+    min-height: unset;
+    max-height: unset;
+    padding: 0;
+}
+
+/** 模态框头部 */
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    height: auto;
+    padding: 1px 1rem;
+    background-color: #111827;
+}
+
+/** 模态框标题 */
+.modal-header h5 {
+    margin: 0;
+    font-size: 0.7rem;
+    font-weight: 700;
+}
+
+/** 模态框脚部 */
+.modal-footer {
+    display: flex;
+    gap: 0.4rem;
+    flex-shrink: 0;
+    height: 35px;
+    margin-top: 8px;
+}
+
+/** 模态框脚部按钮 */
+.modal-footer button {
+    flex: 1;
+    margin: 0 5px;
+    font-size: 0.8rem;
+    background-color: transparent;
+    border: none;
+    border-radius: 0.3rem;
+    cursor: pointer;
+}
+
+
+
+
+.modal-form-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    width: 100%;
+    min-width: 300px;
+    max-width: 340px;
+    margin: 0 auto;
+    padding: 1.5rem;
+    background: #111827;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4);
+    transform: scale(0.95);
+    opacity: 0;
+    animation: modalPopIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes modalPopIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.modal-form-container h3 {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 0;
+    padding-bottom: 1rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #f3f4f6;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.modal-form-container .modal-title-text {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.modal-form-container p {
+    margin: 0.5rem 0;
+    font-size: 0.85rem;
+    line-height: 1.6;
+    color: #9ca3af;
+}
+
+.modal-form-container input, 
+.modal-form-container textarea,
+.modal-form-container select {
+    width: 100%;
+    margin-top: 0.2rem;
+    padding: 0.75rem 1rem;
+    font-size: 0.7rem;
+    color: #e0e7ff;
+    background: #030712;
+    border: 1px solid #374151;
+    border-radius: 8px;
+    outline: none;
+    transition: all 0.2s ease;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.modal-form-container input:focus, 
+.modal-form-container textarea:focus,
+.modal-form-container select:focus {
+    background: #0f172a;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.checkbox-container {
+    margin-top: 0.5rem;
+    padding: 0.5rem;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.modal-form-container textarea {
+    min-height: 100px;
+    resize: vertical;
+    line-height: 1.5;
+}
+
+.modal-buttons {
+    
+    padding-top: 0;
+}
+
+.modal-overlay {
+    background-color: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    transition: all 0.3s ease;
+}
+
+body.light-theme .modal-overlay {
+    background-color: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+}
+
+body.light-theme .modal-form-container {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+body.light-theme .modal-form-container h3 {
+    color: #111827;
+    border-bottom-color: #e5e7eb;
+}
+
+body.light-theme .modal-form-container p {
+    color: #4b5563;
+}
+
+body.light-theme .modal-form-container input,
+body.light-theme .modal-form-container textarea,
+body.light-theme .modal-form-container select {
+    color: #1f2937;
+    background: #f9fafb;
+    border-color: #d1d5db;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.03);
+}
+
+body.light-theme .modal-form-container input:focus,
+body.light-theme .modal-form-container textarea:focus,
+body.light-theme .modal-form-container select:focus {
+    background: #ffffff;
+    border-color: #4f46e5;
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+body.light-theme .checkbox-container {
+    background: #f3f4f6;
+}
+
+@media (max-width: 480px) {
+    .modal-form-container {
+        width: 92%;
+        min-width: unset;
+        padding: 1.2rem;
+        border-radius: 12px;
+    }
+}
+
+
+/** 模态框按钮容器 */
+.modal-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}
+
+/** 模态框按钮 */
+.modal-buttons button {
+    flex: 1;
+    min-width: 60px;
+    height: 34px;
+    margin-bottom: 0.9rem;
+}
+
+/** 加载动画遮罩 */
+.loading-overlay {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(17, 24, 39, 0.7);
+}
+
+/** ---------------- 文件编辑器 ---------------- */
+
+/** 编辑器模态框 */
+#editModal {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 120;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 0, 0, 0.8);
+}
+
+/** 编辑器容器 */
+.editor-container {
+    position: relative;
+    display: flex;
+    justify-content: center;
+}
+
+/** 文件内容输入区 */
+#fileContent {
+    width: 100%;
+    height: 100%;
+    padding: 0.4rem 0.6rem;
+    font-size: 10px; /* 默认字体大小 */
+    line-height: 15px; /* 默认行高 */
+    color: #c0c0c0;
+    background-color: #030712;
+    border: 1px solid #374151;
+    box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.2), inset -1px -1px 3px rgba(75, 85, 99, 0.05);
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow: auto;
+    overflow-wrap: break-word;
+    resize: none;
+    outline: 0;
+}
+
+/** 文件内容文本选中高亮 */
+#fileContent::selection {
+    color: #ffffff;
+    background-color: #0078d4;
+}
+
+/** 文件内容文本选中高亮 (Firefox) */
+#fileContent::-moz-selection {
+    color: #ffffff;
+    background-color: #0078d4;
+}
+
+/** 编辑器加载遮罩 */
+#editorOverlay {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(17, 24, 39, 0.7);
+    border-radius: 0.3rem;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+}
+
+/** 编辑器加载遮罩显示状态 */
+#editorOverlay.show {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/** 保存成功通知 */
+#saveNotification {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    z-index: 5;
+    padding: 3px 6px;
+    font-size: 12px;
+    color: #fff;
+    background-color: rgba(15, 81, 50, 0.9);
+    border-radius: 3px;
+    opacity: 0;
+    transform: translateY(-8px);
+    transition: opacity 0.3s, transform 0.3s;
+}
+
+/** 保存成功通知显示状态 */
+#saveNotification.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/** 编辑器控制按钮（关闭、最大化、撤销、搜索） */
+#closeEditModal,
+#toggleMaximizeModal,
+#revertEditBtn,
+#searchInFileBtn {
+    padding: 0.3rem;
+    font-size: 0.9rem;
+    color: #fff;
+    background: transparent;
+    border: none;
+    border-radius: 9999px;
+    cursor: pointer;
+}
+
+/** 禁用的编辑器按钮 */
+#revertEditBtn:disabled,
+#toggleMaximizeModal:disabled {
+    color: #6b7280;
+}
+
+/** 编辑器错误提示 */
+.edit-status.error {
+    width: 100%;
+    margin: 0;
+    padding: 4px 0;
+    font-size: 0.65rem;
+    color: #ffffff;
+    text-align: center;
+    background-color: #111827;
+}
+
+/** ---------------- 编辑器最大化 ---------------- */
+
+/** 最大化编辑器模态框 */
+#editModal.maximized {
+    padding: 0 !important;
+}
+
+/** 最大化编辑器内容区 */
+#editModal.maximized .modal-content {
+    display: flex;
+    flex-direction: column;
+    width: 100vw !important;
+    height: 100dvh !important;
+    min-height: 100dvh !important;
+    max-width: 100vw !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+}
+
+/** 最大化编辑器容器 */
+#editModal.maximized .editor-container {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow: hidden;
+}
+
+/** 最大化文件内容区 */
+#editModal.maximized #fileContent {
+    height: 100% !important;
+    min-height: unset !important;
+}
+
+/** 最大化编辑器页头/脚 */
+#editModal.maximized .modal-footer,
+#editModal.maximized .modal-header {
+    flex-shrink: 0;
+}
+
+/** ---------------- 编辑器搜索面板 ---------------- */
+
+/** 编辑器搜索面板 */
+#editorSearchPanel {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 15;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 90%;
+    margin: 0 4px;
+    padding: 10px;
+    text-align: center;
+    background-color: rgba(55, 65, 81, 0.7);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    opacity: 0;
+    transform: translateY(-20px);
+    transition: transform 0.2s ease-out, opacity 0.2s ease-out;
+}
+
+/** 编辑器搜索面板显示状态 */
+#editorSearchPanel:not(.hidden) {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/** 编辑器搜索输入框 */
+#editorSearchInput {
+    margin: 0 4px;
+    padding: 4px 2px;
+    width: 100%;
+    font-size: 0.8rem;
+    color: #ffffff;
+    background-color: transparent;
+    border: none;
+    border-bottom: 1px solid #9ca3af;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+/** 编辑器搜索输入框聚焦效果 */
+#editorSearchInput:focus {
+    border-bottom-color: #3b82f6;
+}
+
+/** 编辑器搜索匹配计数 */
+#editorSearchMatchCount {
+    margin-right: 4px;
+    min-width: 50px;
+    font-size: 0.75rem;
+    color: #d1d5db;
+    text-align: center;
+}
+
+/** 编辑器搜索上一个/下一个按钮 */
+#editorSearchPrevBtn {
+    margin-right: 18px;
+}
+#editorSearchNextBtn {
+    margin-right: 16px;
+}
+
+/** 编辑器搜索面板内按钮 */
+#editorSearchPanel button {
+    padding: 4px;
+    color: #d1d5db;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+/** 编辑器搜索面板内按钮悬浮效果 */
+#editorSearchPanel button:hover {
+    color: #ffffff;
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+/** 搜索激活时编辑器内容区域 */
+.editor-container.search-active #fileContent {
+    padding-top: 50px;
+    transition: padding-top 0.2s ease-out;
+}
+
+/** ---------------- 右键菜单 ---------------- */
+
+/** 右键菜单容器 */
+#contextMenu {
+    position: fixed;
+    z-index: 50;
+    min-width: 120px;
+    max-width: 180px;
+    padding: 0.4rem 0;
+    overflow: hidden;
+    background-color: rgba(17, 24, 39, 0.8);
+    backdrop-filter: blur(10px);
+    border-radius: 0.3rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(75, 85, 99, 0.04);
+}
+
+/** 右键菜单项 */
+#contextMenuItems a {
+    display: block;
+    margin-left: 0.2rem;
+    padding: 0.5rem 0.6rem;
+    overflow: hidden;
+    font-size: 0.75rem;
+    color: #fff;
+    white-space: nowrap;
+    text-decoration: none;
+    text-overflow: ellipsis;
+}
+
+/** 右键菜单项图标 */
+#contextMenuItems a i {
+    margin-right: 0.5rem;
+}
+
+/** ---------------- Toast 通知 ---------------- */
+
+/** Toast 通知容器 */
+#toast {
+    position: fixed;
+    bottom: 4rem;
+    left: 50%;
+    z-index: 9900;
+    min-width: 180px;
+    max-width: 90%;
+    padding: 0.5rem 0.6rem;
+    font-size: 0.7rem;
+    line-height: 1.4;
+    color: #e0e7ff;
+    text-align: center;
+    white-space: nowrap;
+    word-break: break-word;
+    background-color: rgba(28, 39, 61, 0.85);
+    backdrop-filter: blur(10px);
+    border-color: rgba(34, 197, 94, 0.2);
+    border-left-width: 4px;
+    border-radius: 12px;
+    border-color: rgba(34, 197, 94, 0.2);
+
+    /*
+     * [核心修改] 适配亮色主题的更柔和阴影，并叠加一层淡绿色辉光。
+     * 这层辉光就像一个柔和的边框，但不会干扰 border 属性。
+     */
+    box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.3), /* 模拟一个1px的柔和绿色外边框 */
+                0 4px 12px rgba(0, 0, 0, 0.08);       /* 保留原有的柔和阴影 */
+    opacity: 0;
+    visibility: hidden;
+    transform: translate(-50%, 20px);
+    transition: transform 0.4s cubic-bezier(0.21, 1.02, 0.73, 1), opacity 0.4s ease, visibility 0.4s;
+}
+
+/** Toast 显示状态 */
+#toast.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translate(-50%, 0);
+}
+
+/** Toast 成功状态 */
+#toast.toast-success {
+    border-left-color: #22c55e;
+}
+
+/** Toast 错误状态 */
+#toast.toast-error {
+    border-left-color: #ef4444;
+}
+
+/** Toast 信息状态 */
+#toast.toast-info {
+    border-left-color: #3b82f6;
+}
+
+/** ---------------- 上传面板 ---------------- */
+
+/** 上传面板 */
+#uploadPanel {
+    position: fixed;
+    bottom: 3.5rem;
+    left: 50%;
+    z-index: 200;
+    transform: translateX(-50%);
+    width: 90%;
+    max-width: 26rem;
+    padding: 0.6rem;
+    font-size: 0.75rem;
+    background-color: rgba(17, 24, 39, 0.8);
+    backdrop-filter: blur(10px);
+    border: 1px solid #034;
+    border-radius: 0.3rem;
+    box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2), -1px -1px 3px rgba(75, 85, 99, 0.05);
+}
+
+/** 上传项列表 */
+#uploadItems {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-height: 12rem;
+    overflow-y: auto;
+}
+
+/** 上传信息 */
+.upload-info {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    min-width: 0;
+    font-size: 0.8rem;
+}
+
+/** 上传文件名 */
+.upload-name {
+    display: inline-block;
+    flex: 1 1 0;
+    max-width: 70%;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+/** 上传文件大小 */
+.upload-size {
+    flex-shrink: 0;
+    margin-left: 5px;
+    font-size: 0.8em;
+    color: #9ca3af;
+}
+
+/** 上传进度条容器 */
+.upload-progress-container {
+    position: relative;
+    height: 6px;
+    margin: 3px 0;
+    overflow: hidden;
+    background: #374151;
+    border-radius: 3px;
+}
+
+/** 上传进度条 */
+.upload-progress {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    width: 0;
+    height: 100%;
+    background: linear-gradient(90deg, #22c55e, #0ea5e9, #6366f1, #f472b6, #f59e42, #22c55e);
+    background-size: 200% 100%;
+    border-radius: 3px;
+    animation: 2s linear infinite rainbow-bar;
+    transition: width 0.3s;
+}
+
+/** 上传进度百分比 */
+.upload-progress .percent-text {
+    position: absolute;
+    top: 50%;
+    right: -1px;
+    transform: translateY(-50%) translateX(100%);
+    padding: 0 4px;
+    font-size: 0.6rem;
+    font-weight: 700;
+    color: #f3f4f6;
+    white-space: nowrap;
+    transition: transform 0.3s;
+}
+
+/** 上传状态 */
+.upload-status {
+    margin-top: 4px;
+    font-size: 0.7rem;
+    text-align: right;
+}
+
+/** ---------------- 代理设置 ---------------- */
+
+/** 代理设置模态框容器 */
+#proxySettingsModal .modal-form-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    max-width: 340px;
+    height: 70vh;
+    min-height: 380px;
+    max-height: 500px;
+    padding: 0.8rem;
+}
+
+/** 代理设置头部操作区 */
+#proxySettingsModal .proxy-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+}
+
+/** 代理列表容器 */
+#proxySettingsModal .proxy-list-container {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    overflow-y: auto;
+    background-color: #030712;
+    border: 1px solid #374151;
+    border-radius: 0.3rem;
+}
+
+/** 代理列表项 */
+.proxy-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.6rem 0.8rem;
+    background-color: #111827;
+    border: 1px solid transparent;
+    border-radius: 0.3rem;
+    cursor: pointer;
+    transition: background-color 0.2s, box-shadow 0.2s;
+}
+
+/** 激活的代理项 */
+.proxy-item.active {
+    background-color: rgba(99, 102, 241, 0.2);
+    border-color: #6366f1;
+    box-shadow: 0 0 8px rgba(99, 102, 241, 0.3);
+}
+
+/** 代理身份区域 */
+.proxy-item .proxy-identity {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: 0.6rem;
+    min-width: 0;
+}
+
+/** 状态点 */
+.status-dot {
+    flex-shrink: 0;
+    width: 8px;
+    height: 8px;
+    background-color: #6b7280;
+    border-radius: 50%;
+}
+
+/** 状态点-绿 */
+.status-dot.green {
+    background-color: #22c55e;
+}
+/** 状态点-黄 */
+.status-dot.yellow {
+    background-color: #f59e0b;
+}
+/** 状态点-红 */
+.status-dot.red {
+    background-color: #ef4444;
+}
+
+/** 代理URL */
+.proxy-item .proxy-url {
+    overflow: hidden;
+    font-size: 0.8rem;
+    font-weight: 500;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+/** 代理状态与操作区域 */
+.proxy-item .proxy-status-actions {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 0.8rem;
+}
+
+/** 延迟文本 */
+.latency-text {
+    min-width: 50px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #9ca3af;
+    text-align: right;
+}
+
+/** 延迟文本-绿 */
+.latency-text.green {
+    color: #22c55e;
+}
+/** 延迟文本-黄 */
+.latency-text.yellow {
+    color: #f59e0b;
+}
+/** 延迟文本-红 */
+.latency-text.red {
+    color: #ef4444;
+}
+
+/** 代理操作按钮组 */
+.proxy-item .proxy-actions {
+    display: flex;
+    gap: 0.2rem;
+}
+
+/** 代理脚部操作区 */
+.proxy-footer-actions {
+    position: relative;
+    flex-shrink: 0;
+    padding-top: 0.6rem;
+    border-top: 1px solid #374151;
+}
+
+/** 代理脚部工具栏 */
+.proxy-footer-toolbar {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+}
+
+/** 代理脚部工具栏按钮悬浮效果 */
+#proxySettingsModal .proxy-footer-toolbar .btn-icon:hover {
+    color: #22c55e;
+}
+
+/** 代理设置空状态 */
+#proxySettingsModal .empty-state {
+    margin: auto;
+    color: #6b7280;
+    text-align: center;
+}
+
+/** 代理设置空状态图标 */
+#proxySettingsModal .empty-state i.fa-plug {
+    margin-bottom: 0.8rem;
+    font-size: 2.5rem;
+}
+
+/** 代理设置空状态段落 */
+#proxySettingsModal .empty-state p {
+    margin-bottom: 0.4rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #9ca3af;
+}
+
+/** 代理设置空状态提示 */
+#proxySettingsModal .empty-state span {
+    font-size: 0.7rem;
+}
+
+/** 代理设置空状态提示图标 */
+#proxySettingsModal .empty-state span i {
+    color: #a78bfa;
+}
+
+/** ---------------- 分支管理 ---------------- */
+
+/** 自定义分支选择器包裹 */
+.custom-branch-select-wrapper {
+    position: relative;
+    width: 100%;
+    max-width: 200px;
+    font-size: 0.8rem;
+}
+
+/** 自定义分支选择器触发器 */
+.custom-branch-select-trigger {
+    display: flex;
+    align-items: center;
+    width: 160px;
+    padding: 5px 6px;
+    color: #e0e7ff;
+    text-align: center;
+    background-color: transparent;
+    border: 1px solid #374151;
+    border-radius: 0.3rem;
+    overflow: hidden;
+    cursor: pointer;
+    transition: border-color 0.2s;
+}
+
+/** 模态框内分支选择器触发器悬浮效果 */
+.custom-branch-select-trigger:hover,
+.modal-form-container input:focus,
+.modal-form-container textarea:focus {
+    border-color: #6366f1;
+}
+
+/** 顶部仓库分支切换按钮 */
+#branchSwitcherContainer .custom-branch-select-trigger {
+    width: 40px;
+    padding: 2px 4px;
+    text-align: center;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+
+/** 顶部仓库分支切换按钮悬浮效果 */
+#branchSwitcherContainer .custom-branch-select-trigger:hover {
+    border-color: #6366f1;
+}
+
+/** 自定义分支选择器文本 */
+.custom-branch-select-trigger span {
+    flex-grow: 1;
+    width: 100%;
+    padding: 0.2rem 0;
+    font-size: 0.6rem;
+    text-align: center;
+}
+
+/** 自定义分支选择器图标 */
+.custom-branch-select-trigger .fa {
+    flex-shrink: 0;
+    margin-left: 0.2rem;
+    padding-right: 0.5rem;
+    font-size: 0.4rem;
+    transition: transform 0.3s;
+}
+
+/** 展开的分支选择器图标 */
+.custom-branch-select-wrapper.open .custom-branch-select-trigger .fa {
+    transform: rotate(0);
+}
+
+/** 自定义分支选择器选项面板 */
+.custom-branch-select-options {
+    position: absolute;
+    top: calc(100% + 4px);
+    z-index: 100;
+    width: 100%;
+    max-height: 200px;
+    font-size: 1rem;
+    text-align: center;
+    overflow-y: auto;
+    background-color: #111827;
+    border: 1px solid #374151;
+    border-radius: 0.3rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-10px);
+    transition: opacity 0.2s, transform 0.2s;
+}
+
+/** 顶部仓库分支选择器选项面板 */
+#branchSwitcherContainer .custom-branch-select-options {
+    left: 0;
+    width: 140px;
+    max-height: 141px;
+}
+
+/** 展开的分支选择器选项面板 */
+.custom-branch-select-wrapper.open .custom-branch-select-options {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+}
+
+/** 自定义分支选择器选项 */
+.custom-branch-select-option {
+    padding: 0.8rem 0;
+    overflow: hidden;
+    font-size: 0.6rem;
+    color: #d1d5db;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    cursor: pointer;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+/** 选中的分支选项/下拉项 */
+.custom-branch-select-option.selected,
+.dropdown-item.selected {
+    font-weight: 700;
+    color: #22c55e;
+    background-color: #1f2937;
+}
+
+/** 创建分支模态框 */
+#createBranchModal {
+    animation: 0.3s ease-out forwards branchFadeIn;
+}
+
+/** 创建分支模态框表单组 */
+#createBranchModal .form-group {
+    width: 100%;
+    margin-bottom: 0.7rem;
+}
+
+/** 创建分支模态框标签 */
+#createBranchModal .form-group label {
+    display: block;
+    margin-bottom: 0;
+    font-size: 0.75rem;
+    color: #e0e7ff;
+}
+
+/** 分支选择容器 */
+.branch-select-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    margin-top: 0.6rem;
+}
+
+/** 创建分支模态框删除按钮 */
+#createBranchModal #deleteBranchBtn {
+    flex-shrink: 0;
+    min-width: 40px;
+    min-height: 40px;
+    margin-left: 0.5rem;
+}
+
+/** 创建分支模态框输入框/选择框 */
+#createBranchModal input,
+#createBranchModal select {
+    width: 100%;
+    padding: 0.5rem 0.6rem;
+    font-size: 0.8rem;
+    color: #e0e7ff;
+    background-color: #030712;
+    border: 1px solid #374151;
+    border-radius: 0.3rem;
+}
+
+/** 创建分支模态框输入框/选择框聚焦效果 */
+#createBranchModal input:focus,
+#createBranchModal select:focus {
+    outline: 0;
+    border-color: #6366f1;
+}
+
+/** ---------------- 设置网站 ---------------- */
+
+/** 设置网站模态框段落 */
+#setAsSiteModal .modal-form-container p {
+    margin-top: -0.4rem;
+    margin-bottom: 0.8rem;
+    font-size: 0.8rem;
+    color: #9ca3af;
+}
+
+/** 设置网站模态框表单组 */
+#setAsSiteModal .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+/** 设置网站模态框标签 */
+#setAsSiteModal .form-group label {
+    margin-bottom: 4px;
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: #e0e7ff;
+}
+
+/** 设置网站模态框分支选择器 */
+#setAsSiteModal .custom-branch-select-wrapper {
+    max-width: 100%;
+}
+
+/** 设置网站模态框分支选择器触发器 */
+#setAsSiteModal .custom-branch-select-trigger {
+    width: 100%;
+    justify-content: space-between;
+    text-align: left;
+    background-color: #030712;
+}
+
+/** 设置网站模态框分支选择器文本 */
+#setAsSiteModal .custom-branch-select-trigger span {
+    font-size: 0.7rem;
+    text-align: left;
+}
+
+/** 设置网站模态框分支选择器图标 */
+#setAsSiteModal .custom-branch-select-trigger .fa {
+    font-size: 0.7rem;
+}
+
+/** 设置网站模态框分支选择器选项面板 */
+#setAsSiteModal .custom-branch-select-options {
+    font-size: 0.7rem;
+}
+
+/** 设置网站模态框分支选择器选项 */
+#setAsSiteModal .custom-branch-select-option {
+    padding: 0.6rem 0.8rem;
+    font-size: 0.7rem;
+    text-align: left;
+}
+
+/** ---------------- 其他组件 ---------------- */
+
+/** 删除/重命名模态框 */
+#deleteModal,
+#renameModal {
+    z-index: 130;
+}
+
+/** 自定义选择器容器 */
+.custom-select-container {
+    position: relative;
+    display: inline-block;
+}
+
+/** 右键菜单, 自定义下拉菜单 */
+#contextMenu,
+.custom-dropdown {
+    min-width: 120px;
+    overflow: hidden;
+}
+
+/** 自定义下拉菜单 */
+.custom-dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    z-index: 30;
+    margin-top: 0.6rem;
+    text-align: center;
+    background-color: #111827;
+    border: 1px solid #374151;
+    border-radius: 0.3rem;
+    box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.06);
+}
+
+/** 下拉菜单项 */
+.dropdown-item {
+    padding: 0.6rem;
+    font-size: 0.7rem;
+    color: #f3f4f6;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+/** 视图切换按钮 */
+#viewToggleBtn {
+    padding: 0.3rem;
+    font-size: 0.75rem;
+    color: #f3f4f6;
+    background: transparent;
+    border: none;
+    border-radius: 0.3rem;
+    cursor: pointer;
+}
+
+/** 媒体预览容器 */
+#mediaPreview {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    width: 100vw;
+    height: 100vh;
+    text-align: center;
+    background-color: rgba(0, 0, 0, 0.7);
+    cursor: pointer;
+}
+
+/** 隐藏的媒体预览 */
+#mediaPreview.hidden {
+    display: none;
+}
+
+/** 媒体预览图片 */
+#mediaPreview img {
+    min-width: 0;
+    width: auto;
+    
+    margin-top: 0;
+    margin-left: 0;
+    padding: 0;
+    text-align: center;
+    object-fit: contain;
+    border: 2px solid transparent;
+    
+}
+
+/** 媒体预览视频 */
+#mediaPreview video {
+    min-width: 0;
+    width: 100%;
+    min-height: 0;
+    max-height: 100%;
+    text-align: center;
+    object-fit: contain;
+    border: 3px solid transparent;
+    border-image: linear-gradient(90deg, #0ea5e9, #6366f1, #33ff99) 1;
+}
+
+/** 代理快速切换按钮 */
+#proxyQuickToggle {
+    color: #f3f4f6;
+    background: transparent;
+    border: none;
+}
+
+
+
+/** ---------------- 按钮与交互元素 ---------------- */
+
+/** 通用按钮 */
+.btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.3rem;
+    min-height: 36px;
+    padding: 0.4rem 0.7rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+    border: none;
+    border-radius: 0.3rem;
+    cursor: pointer;
+    transition: background 0.2s, opacity 0.2s;
+}
+
+/** 图标按钮 */
+.btn-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    min-width: 38px;
+    min-height: 38px;
+    padding: 0.4rem;
+    font-size: 0.7rem;
+    color: #f3f4f6;
+    background: transparent;
+    border: none;
+    border-radius: 9999px;
+    cursor: pointer;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+/** 小号图标按钮 */
+.btn-icon-sm {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    padding: 0.2rem;
+    font-size: 0.95rem;
+    color: #9ca3af;
+    background: transparent;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+/** 小号图标按钮悬浮效果 */
+.btn-icon-sm:hover:not(:disabled) {
+    color: #f3f4f6;
+    background-color: rgba(107, 114, 128, 0.2);
+}
+
+/** 保存编辑按钮 */
+#saveEdit {
+    color: #fff;
+    background: transparent;
+}
+
+/** 添加/编辑代理保存按钮 */
+#addEditProxySaveBtn {
+    color: #fff;
+    background: linear-gradient(90deg, #10b981, #22c55e);
+}
+
+
+
+/**
+ * ======================================================
+ *              编辑器保存按钮悬浮效果修复
+ * ======================================================
+ */
+
+
+
+/** 编辑器“保存”按钮悬浮状态 (改为通用灰色高亮) */
+#saveEdit:hover {
+    /*
+     * 使用与其他控制按钮一致的半透明灰色背景，
+     * 替代了原有的绿色渐变，使视觉效果更统一。
+     */
+    background-color: rgba(107, 114, 128, 0.2);
+}
+
+
+
+
+
+
+
+
+
+/** 次要按钮 */
+.btn-secondary {
+    padding: 0.3rem 0.6rem;
+    font-size: 0.75rem;
+    color: #f3f4f6;
+    background-color: #374151;
+}
+
+/** 次要按钮悬浮 */
+.btn-secondary:hover:not(:disabled) {
+    background-color: #4b5563;
+}
+
+
+
+
+
+/** 禁用按钮 */
+.btn.disabled:not(.btn-processing),
+.btn:disabled:not(.btn-processing) {
+    opacity: 0.5 !important;
+    cursor: not-allowed !important;
+}
+
+/** 危险图标按钮 */
+.btn-icon.danger,
+.btn-icon-sm.danger {
+    color: #ef4444;
+}
+
+/** 危险图标按钮悬浮 */
+.btn-icon.danger:hover:not(:disabled),
+.btn-icon-sm.danger:hover:not(:disabled) {
+    background-color: rgba(239, 68, 68, 0.2);
+}
+
+/** 激活状态 */
+#customSortDropdown .dropdown-item[data-priority].active,
+#proxyGlobalEnableToggle.active,
+#proxyQuickToggle.active,
+.btn-icon.active,
+.btn-icon-sm.active,
+.upload-status.success {
+    color: #22c55e;
+}
+
+/** ---------------- 多选模式 ---------------- */
+
+/** 多选模式下的文件项 */
+#fileList.multi-select-mode .file-item {
+    cursor: pointer;
+}
+
+
+
+/** 选择复选框包裹 */
+.select-checkbox-wrapper {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    opacity: 0;
+    transform: scale(0.5);
+    transition: 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/** 多选模式下显示复选框 */
+#fileList.multi-select-mode .select-checkbox-wrapper {
+    opacity: 1;
+    transform: scale(1);
+}
+
+/** 复选框背景 */
+.select-checkbox-bg {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    backdrop-filter: blur(4px);
+    border: 2px solid rgba(255, 255, 255, 0.6);
+    border-radius: 50%;
+    transition: 0.25s;
+}
+
+
+
+
+
+/** 复选框勾号 */
+.select-checkbox-wrapper .fa-check {
+    position: relative;
+    font-size: 8px;
+    color: #fff;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    opacity: 0;
+    transform: scale(0.5);
+    transition: 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/** 选中项的复选框勾号 */
+.file-item.selected .select-checkbox-wrapper .fa-check {
+    opacity: 1;
+    transform: scale(1);
+}
+
+/** 多选操作栏 */
+/** 多选操作栏 */
+#multi-select-bar {
+    position: fixed;
+    bottom: 60px;
+    left: 50%;
+    z-index: 15;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: calc(100% - 40px);
+    max-width: 500px;
+    padding: 0.5rem;
+    background-color: rgba(17, 24, 39, 0.8);
+    backdrop-filter: blur(16px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    
+    /* --- 修复核心：默认隐形，防止加载时闪烁黑块 --- */
+    transform: translateX(-50%) translateY(150%);
+    opacity: 0;
+    visibility: hidden;
+    /* --------------------------------------- */
+
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/** 激活的多选操作栏 */
+#multi-select-bar.active {
+    transform: translateX(-50%) translateY(0);
+    
+    /* --- 修复核心：激活时显示 --- */
+    opacity: 1;
+    visibility: visible;
+}
+
+
+/** 选中计数 */
+#selected-count {
+    min-width: 90px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #a1aab8;
+    text-align: center;
+}
+
+/** 操作按钮组 */
+.action-buttons {
+    display: flex;
+    align-items: center;
+    border-radius: 12px;
+}
+
+/** 操作按钮 */
+.action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 50px;
+    height: 50px;
+    font-size: 1rem;
+    color: #a1aab8;
+    background: transparent;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+/** 操作按钮悬浮 */
+.action-btn:hover:not(:disabled) {
+    color: #3f9;
+}
+
+/** 禁用的操作按钮 */
+.action-btn:disabled {
+    color: #484f58;
+    cursor: not-allowed;
+}
+
+/** 删除按钮悬浮 */
+.action-btn.delete-btn:hover:not(:disabled) {
+    color: #f85149;
+}
+
+/** 取消选择按钮 */
+.cancel-btn {
+    width: 48px;
+    height: 48px;
+    margin-left: 0.6rem;
+    font-size: 1.2rem;
+    color: #a1aab8;
+    border-radius: 12px;
+}
+
+/** 取消选择按钮悬浮 */
+.cancel-btn:hover {
+    color: #e6edf3;
+}
+
+/** ---------------- 状态与加载 ---------------- */
+
+/** 加载动画容器 */
+.loading-spinner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    grid-column: 1 / -1;
+    height: 80vh;
+    padding: 1.2rem 0;
+}
+
+/** 加载动画 */
+.spinner {
+    width: 2.3rem;
+    height: 2.3rem;
+    border-top: 2px solid #10b981;
+    border-bottom: 2px solid #6366f1;
+    border-radius: 9999px;
+    animation: 1s linear infinite spin;
+}
+
+/** 小号加载动画 */
+.spinner-small {
+    flex-shrink: 0;
+    width: 0.8em;
+    height: 0.8em;
+    margin-left: 0.2em;
+    vertical-align: middle;
+    border-top: 1px solid currentColor;
+    border-bottom: 1px solid currentColor;
+    border-radius: 9999px;
+    animation: 1s linear infinite spin;
+}
+
+/** 空状态 */
+.empty-state {
+    padding: 1.5rem 0;
+    color: #9ca3af;
+    text-align: center;
+}
+
+/** 空状态图标 */
+.empty-state i {
+    margin-bottom: 0.5rem;
+    font-size: 2rem;
+    color: #6366f1;
+}
+
+/** 空状态文本 */
+.empty-state p {
+    font-size: 0.85rem;
+}
+
+/** ---------------- 右键菜单设置 ---------------- */
+
+/** 菜单设置选项卡 */
+.context-menu-settings-tabs {
+    display: flex;
+    margin-bottom: 0.6rem;
+    padding: 0.2rem;
+    background-color: #030712;
+    border-radius: 0.3rem;
+}
+
+/** 选项卡按钮 */
+.tab-btn {
+    flex: 1;
+    padding: 0.4rem;
+    font-size: 0.75rem;
+    color: #9ca3af;
+    background-color: transparent;
+    border: none;
+    border-radius: 0.2rem;
+    cursor: pointer;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+/** 激活的选项卡按钮 */
+.tab-btn.active {
+    font-weight: 600;
+    color: #f3f4f6;
+    background: linear-gradient(90deg, #10b981, #22c55e);
+    box-shadow: 0 2px 8px rgba(34, 197, 94, 0.3);
+}
+
+/** 菜单设置内容 */
+#contextMenuSettingsContent {
+    max-height: 70vh;
+    
+    overflow-y: auto;
+    
+    padding: 0.2rem;
+    
+    margin-bottom:0.4rem;
+    
+    border-radius: 0.3rem;
+}
+
+
+/** 设置项 */
+.setting-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.7rem 0.2rem;
+    border-bottom: 1px solid #374151;
+}
+
+/** 最后一个设置项 */
+.setting-item:last-child {
+    border-bottom: none;
+}
+
+/** 设置项标签 */
+.setting-item label {
+    font-size: 0.8rem;
+    color: #e0e7ff;
+}
+
+/** 开关组件 */
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 40px;
+    height: 22px;
+}
+
+/** 开关输入框 */
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+/** 滑块 */
+.slider {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #374151;
+    cursor: pointer;
+    transition: 0.4s;
+}
+
+/** 滑块圆形手柄 */
+.slider:before {
+    content: "";
+    position: absolute;
+    bottom: 3px;
+    left: 3px;
+    width: 16px;
+    height: 16px;
+    background-color: white;
+    transition: 0.4s;
+}
+
+/** 选中的滑块 */
+input:checked + .slider {
+    background-color: #22c55e;
+}
+
+/** 选中的滑块手柄 */
+input:checked + .slider:before {
+    transform: translateX(18px);
+}
+
+/** 圆形滑块 */
+.slider.round {
+    border-radius: 22px;
+}
+
+/** 圆形滑块手柄 */
+.slider.round:before {
+    border-radius: 50%;
+}
+
+/** ---------------- API 状态仪表盘 ---------------- */
+
+/** API状态遮罩 */
+.api-status-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 190;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease-out;
+}
+
+/** 打开的API状态遮罩 */
+.api-status-overlay.open {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/** API状态面板 */
+.api-status-panel {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 200;
+    display: flex;
+    flex-direction: column;
+    width: 280px;
+    height: 100%;
+    background-color: rgba(10, 15, 25, 0.95);
+    backdrop-filter: blur(12px);
+    box-shadow: 2px 0 15px rgba(0, 0, 0, 0.3);
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+/** 打开的API状态面板 */
+.api-status-panel.open {
+    transform: translateX(0);
+}
+
+/** API状态头部 */
+.api-status-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    padding: 0.6rem 0.8rem;
+    border-bottom: 1px solid #1f2937;
+}
+
+/** API状态头部标题 */
+.api-status-header h3 {
+    margin: 0;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #e0e7ff;
+}
+
+/** API状态头部操作区 */
+.api-status-header-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.4rem;
+    padding: 0 0.6rem;
+}
+
+/** API状态内容 */
+.api-status-content {
+    flex-grow: 1;
+    padding: 0.8rem;
+    overflow-y: auto;
+}
+
+/** API状态卡片 */
+.api-status-card {
+    margin-bottom: 0.8rem;
+    padding: 0.7rem;
+    background-color: rgba(17, 24, 39, 0.9);
+    border: 1px solid #1f2937;
+    border-radius: 0.4rem;
+}
+
+/** API状态卡片标题 */
+.api-status-card h4 {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin: 0 0 0.6rem 0;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #a2a7c7;
+}
+
+/** 速率限制/应用状态详情 */
+.rate-limit-details p,
+.app-status-details p {
+    margin: 0.2rem 0;
+    font-size: 0.75rem;
+    color: #d1d5db;
+}
+
+/** 速率限制详情数值 */
+.rate-limit-details span {
+    font-weight: 600;
+    color: #fff;
+}
+
+/** 速率限制进度条 */
+.rate-limit-progress-bar {
+    width: 100%;
+    height: 8px;
+    margin: 0.5rem 0;
+    overflow: hidden;
+    background-color: #374151;
+    border-radius: 4px;
+}
+
+/** 速率限制进度条内部 */
+.rate-limit-progress-bar > div {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.5s ease-out;
+}
+
+/** 进度条-绿 */
+.progress-green {
+    background-color: #22c55e;
+}
+/** 进度条-黄 */
+.progress-yellow {
+    background-color: #f59e0b;
+}
+/** 进度条-红 */
+.progress-red {
+    background-color: #ef4444;
+}
+
+/** Token权限范围 */
+.token-scopes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    margin-top: 0.4rem;
+}
+
+/** Token权限标签 */
+.token-scope {
+    padding: 0.15rem 0.4rem;
+    font-size: 0.65rem;
+    color: #d1d5db;
+    background-color: #374151;
+    border-radius: 0.2rem;
+}
+
+/** ---------------- 辅助类与动画 ---------------- */
+
+/** 文本颜色-红 */
+.text-red-400 {
+    color: #f87171 !important;
+}
+/** 文本颜色-绿 */
+.text-green-500 {
+    color: #22c55e !important;
+}
+/** 文本颜色-橙 */
+.text-orange-400 {
+    color: #fb923c !important;
+}
+/** 文本颜色-灰 */
+.text-gray-400 {
+    color: #9ca3af !important;
+}
+
+/** 排序下拉菜单分割线 */
+#customSortDropdown .dropdown-divider {
+    height: 2px;
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+/** 自定义旋转动画 */
+.fa-spin-custom {
+    animation: spin 1s linear infinite;
+}
+
+/** 旋转动画 */
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/** 彩虹进度条动画 */
+@keyframes rainbow-bar {
+    0% {
+        background-position: 0 50%;
+    }
+    100% {
+        background-position: 100% 50%;
+    }
+}
+
+/** 分支选择淡入动画 */
+@keyframes branchFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/** 抖动动画 */
+@keyframes shake {
+    0%, 100% {
+        transform: translateX(0);
+    }
+    25% {
+        transform: translateX(-5px);
+    }
+    75% {
+        transform: translateX(5px);
+    }
+}
+
+/** 列表项淡入动画 */
+@keyframes itemFadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/** ---------------- 账号管理 ---------------- */
+
+/** 账号列表项 */
+.account-item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.8rem 0.6rem;
+    background-color: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+/** 账号操作按钮 */
+.account-item .account-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 0 0.6rem;
+    transform: translateX(10px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+/** 激活的账号项 */
+.account-item.active .account-name::before {
+    content: '\f00c';
+    font-family: FontAwesome;
+    margin-right: 0.75rem;
+    font-weight: normal;
+    color: #34d399;
+}
+
+/** 账号列表容器 */
+#accountListContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    font-size: 0.9rem;
+}
+
+/** 添加账号按钮 */
+#showAddAccountModalBtn {
+    margin-top: 6px;
+}
+
+
+/** ---------------- 下拉刷新 ---------------- */
+
+
+#pull-to-refresh .spinner {
+    width: 30px;
+    height: 30px;
+}
+
+/** 下拉刷新指示器 */
+#pull-to-refresh {
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    margin-left: -15px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+/** 下拉刷新中状态 */
+#pull-to-refresh.refreshing {
+    opacity: 1;
+}
+
+
+/** 带工具栏时下拉刷新指示器的位置 */
+main.has-toolbar #pull-to-refresh {
+    top: 45px;
+}
+
+
+/** ---------------- 网站发布管理 ---------------- */
+
+/** 发布列表 */
+.publish-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-height: 520px;
+    padding: 0.6rem;
+    overflow-y: auto;
+    background-color: rgba(0, 0, 0, 0.2);
+    border: 1px solid #1f2937;
+    border-radius: 0.4rem;
+}
+
+/** 发布列表项 */
+.publish-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 0.8rem;
+    font-size: 0.8rem;
+    background-color: rgba(31, 41, 55, 0.5);
+    border: 1px solid #374151;
+    border-radius: 0.3rem;
+    transition: background-color 0.2s, border-color 0.2s, transform 0.2s;
+}
+
+/** 发布列表项悬浮效果 */
+.publish-item:hover {
+    background-color: rgba(55, 65, 81, 0.7);
+    border-color: #4f46e5;
+    transform: translateY(-1px);
+}
+
+/** 发布项仓库名 */
+.publish-item .repo-name {
+    flex: 1;
+    padding-right: 1rem;
+    overflow: hidden;
+    color: #e0e7ff;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+/** 发布项按钮 */
+.publish-item .btn-sm {
+    flex-shrink: 0;
+    padding: 0.2rem 0.6rem;
+    font-size: 0.7rem;
+    min-height: auto;
+}
+
+/** 发布列表空状态 */
+.publish-list-empty {
+    padding: 1.5rem 0;
+    font-size: 0.8rem;
+    color: #6b7280;
+    text-align: center;
+}
+
+/** 发布列表空状态图标 */
+.publish-list-empty::before {
+    content: '\f11a';
+    font-family: "Font Awesome 5 Free";
+    font-weight: 400;
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 1.5rem;
+    color: #4b5563;
+}
+
+
+
+/** 发布管理模态框按钮 */
+#publishManagerModal #batchPublishAllBtn,
+#publishManagerModal #batchUnpublishAllBtn,
+ 
+#publishManagerModal .set-as-main-site-btn{
+    color: #ffffff;
+    background: linear-gradient(90deg, #15803d, #0f766e);
+    border: none;
+}
+
+
+
+/** 发布管理模态框按钮悬浮 */
+#publishManagerModal #batchPublishAllBtn:hover,
+#publishManagerModal #batchUnpublishAllBtn:hover,
+
+
+/** 发布管理模态框次要按钮 */
+#publishManagerModal .publish-item .btn-secondary {
+    color: #e5e7eb;
+    background-color: #4b5563;
+    border: none;
+}
+
+/** 发布管理模态框次要按钮悬浮 */
+#publishManagerModal .publish-item .btn-secondary:hover {
+    background-color: #6b7280;
+}
+
+/** ---------------- 杂项与修复 ---------------- */
+
+/** 删除模态框利弊清单 */
+#deleteModal .modal-pro-con-list {
+    margin-top: 0.8rem;
+    padding-left: 0.5rem;
+    font-size: 0.75rem;
+    text-align: left;
+}
+#deleteModal .modal-pro-con-list p {
+    margin-bottom: 0.4rem;
+    line-height: 1.5;
+}
+#deleteModal .modal-pro-con-list strong {
+    font-weight: 600;
+    color: #e0e7ff;
+}
+#deleteModal .modal-pro-con-list .pros {
+    color: #22c55e;
+}
+#deleteModal .modal-pro-con-list .cons {
+    color: #f59e0b;
+}
+
+/** 通用悬浮背景色 */
+#closeEditModal:hover,
+#contextMenuItems a:hover,
+#mainMenuBtn:hover,
+#mainMenuPopup .menu-items-container button:hover,
+.custom-branch-select-option:hover {
+    background-color: rgba(107, 114, 128, 0.06);
+}
+
+/** 复选框容器 */
+.checkbox-container {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/** 复选框标签 */
+.checkbox-container label {
+    font-size: 0.75rem;
+}
+
+/** 复选框 */
+.checkbox-container input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: #22c55e;
+}
+
+/** 多选切换按钮 */
+#multiSelectToggleBtn {
+    font-size: 0.8rem;
+}
+
+/** 编辑器脚部 */
+#editModal .modal-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    gap: 0.4rem;
+    height: 46px;
+    margin-top: 0;
+    padding: 0 0.3rem;
+    background: linear-gradient(to top, rgba(10, 15, 25, 0.9), rgba(20, 28, 48, 0.85));
+    border-top: 1px solid #374151;
+}
+
+/** 编辑器脚部按钮 */
+#editModal .modal-footer button {
+    flex: 1;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    height: 100%;
+    padding: 0;
+    color: #e6e6e6;
+    background-color: transparent;
+    border: none;
+    border-radius: 0.4rem;
+    cursor: pointer;
+    transition: background-color 0.2s, color 0.2s, transform 0.2s;
+}
+
+/** 编辑器脚部按钮悬浮 */
+#editModal .modal-footer button:hover {
+    color: #2575dc;
+}
+
+/** 编辑器脚部按钮图标 */
+#editModal .modal-footer button i {
+    font-size: 1rem;
+}
+
+/** 编辑器脚部按钮文本 */
+#editModal .modal-footer button span {
+    font-size: 0.7rem;
+    line-height: 1;
+}
+
+/** 禁用的编辑器脚部按钮 */
+#editModal .modal-footer button:disabled {
+    color: #4b5563;
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/** 已修改状态的保存按钮 */
+#editModal .modal-footer #saveEdit.modified {
+    color: #fff;
+    text-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
+}
+
+/** 未修改状态的保存按钮 */
+#editModal .modal-footer #saveEdit:not(.modified) {
+    color: #4b5563;
+    opacity: 0.6;
+    text-shadow: none;
+}
+
+/** 自动选择代理激活状态 */
+#proxyAutoSelectToggle.active {
+    color: #22c55e;
+}
+
+
+
+
+
+/** ---------------- 响应式设计 ---------------- */
+
+/** 中等屏幕 (平板) */
+@media (min-width: 768px) {
+    .modal-content {
+        max-width: 70rem;
+    }
+}
+
+/** 小屏幕 (大手机) */
+@media (max-width: 640px) {
+    footer button {
+        width: 20%;
+    }
+}
+
+/** 超小屏幕 (小手机) */
+@media (max-width: 480px) {
+    #createBranchModal #deleteBranchBtn {
+        min-width: 36px;
+        min-height: 36px;
+    }
+
+    .modal-form-container {
+        min-width: unset;
+        max-width: 80vw;
+        padding: 0.7rem 1rem;
+    }
+
+    .modal-buttons {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.5rem;
+    }
+
+    .modal-buttons button {
+        flex: 1;
+        min-width: 80px;
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/**
+ * ==============================================
+ * 亮色主题 (Light Theme) - 覆盖样式
+ * ==============================================
+ */
+
+
+/** 主题切换按钮 (亮色主题) */
+body.light-theme .header-right #menuThemeToggle {
+    
+    color: #1f2937;
+}
+/** 亮色主题加载中背景 */
+.light-theme-loading {
+    background: #f0f2f5;
+}
+/**
+ * ======================================================
+ *          亮色主题下 Toast 通知样式美化
+ * ======================================================
+ */
+
+/** Toast 通知 (亮色主题) */
+body.light-theme #toast {
+    
+    color: #4b5563;
+    background-color: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(10px);
+
+
+    
+}
+
+/** 页面主体 */
+body.light-theme {
+    color: #1f2937;
+    background: #f0f2f5;
+}
+
+/** 页头、页脚和菜单按钮文本颜色 */
+body.light-theme #currentRepo,
+body.light-theme .header-left i,
+body.light-theme #mainMenuBtn
+ {
+    color: #1f2937;
+}
+
+
+
+/** 认证页头标题 */
+body.light-theme .auth-header h1 {
+    color: #111827;
+}
+
+/** 认证页头段落和指南文本 */
+body.light-theme .auth-header p,
+body.light-theme .token-instructions ol > li,
+body.light-theme .instructions-note {
+    color: #4b5563;
+}
+
+/** 认证表单 */
+body.light-theme .auth-form {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: #99CC66;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+}
+
+/** 令牌输入框 */
+body.light-theme #tokenInput {
+    color: #111827;
+    background-color: #f9fafb;
+    border-color: #d1d5db;
+}
+
+/** 令牌输入框占位符 */
+body.light-theme #tokenInput::placeholder {
+    color: #9ca3af;
+}
+
+/** 令牌输入框聚焦 */
+body.light-theme #tokenInput:focus {
+    border-color: #4f46e5;
+    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
+}
+
+/** 令牌获取指南 */
+body.light-theme .token-instructions {
+    background-color: rgba(255, 255, 255, 0.3);
+    border-color: #99CC66;
+    border-left-color: #4f46e5;
+}
+
+/** 令牌获取指南标题和关键字 */
+body.light-theme .token-instructions h4,
+body.light-theme .token-instructions strong {
+    color: #113436;
+}
+
+/** 令牌获取指南列表项数字 */
+body.light-theme .token-instructions ol > li::before {
+    background-color: #4CAF50;
+}
+
+/** 令牌获取指南无序列表项符号 */
+body.light-theme .token-instructions ul li::before {
+    color: #4f46e5;
+}
+
+/** 令牌获取指南补充说明 */
+body.light-theme .token-instructions small {
+    color: #9ca3af;
+    border-left-color: #e5e7eb;
+}
+
+/** 列表项 */
+/** 列表项 */
+body.light-theme .file-item {
+    background-color: rgba(255, 255, 255, 0.3); /*稍微增加一点背景不透明度*/
+    
+    /* --- 修改这里：亮色主题边框 --- */
+    border-color: rgba(0, 0, 0, 0.1); 
+    /* 或者使用实色： border-color: #e2e8f0; */
+    /* -------------------------- */
+}
+
+/** 列表项悬浮 */
+body.light-theme .file-item:hover,
+body.light-theme #repoList .file-item:hover {
+    background-color: rgba(229, 231, 235, 1);
+    border-color: #d1d5db;
+    box-shadow: 0 0 1px rgba(139, 92, 246, 1);
+}
+
+/** 文件名 */
+body.light-theme .file-name {
+    color: #111827;
+}
+
+/** 文件元信息 */
+body.light-theme .file-meta {
+    color: #6b7280 !important;
+}
+
+/** 文件图标 */
+body.light-theme .file-icon i {
+    color: #4b5563;
+}
+
+/** 缩略图容器 */
+body.light-theme #fileList .file-thumbnail-container {
+    border-color: #e5e7eb;
+}
+
+/** 缩略图加载中容器背景 */
+body.light-theme #fileList .file-thumbnail-container.loading,
+body.light-theme #fileList.grid .file-thumbnail-container.loading,
+body.light-theme #fileList.grid .file-item.is-image-grid .file-thumbnail-container {
+    background: transparent;
+}
+
+/** 网格视图文件项 */
+body.light-theme #fileList.grid .file-item {
+    background-color: rgba(255, 255, 255, 0.4);
+    border-color: rgba(200, 200, 200, 0.3) !important;
+}
+
+/** 网格视图文件名 */
+body.light-theme #fileList.grid .file-name {
+    color: #1f2937;
+}
+
+/** 网格视图文件元信息 */
+body.light-theme #fileList.grid .file-meta {
+    color: #6b7280 !important;
+}
+
+/** 网格视图图片项文字颜色修复 */
+body.light-theme #fileList.grid .file-item.is-image-grid .file-name,
+body.light-theme #fileList.grid .file-item.is-image-grid .file-meta {
+    color: #fff !important;
+}
+
+/** 工具栏 */
+body.light-theme #toolbar {
+    border-bottom-color: #e5e7eb;
+}
+
+/** 图标按钮 */
+body.light-theme .btn-icon,
+body.light-theme .btn-icon-sm,
+body.light-theme #viewToggleBtn {
+    color: #4b5563;
+}
+
+/** 图标按钮悬浮 */
+body.light-theme .btn-icon:hover:not(:disabled),
+body.light-theme .btn-icon-sm:hover:not(:disabled) {
+    color: #1f2937;
+    background-color: #f3f4f6;
+}
+
+/** 搜索输入框 */
+body.light-theme #searchInput {
+    color: #111827;
+    background: #f9fafb;
+    border-color: #d1d5db;
+}
+
+/** 下拉菜单和右键菜单 */
+body.light-theme .custom-dropdown,
+body.light-theme #contextMenu {
+    background-color: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(14px);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+/** 菜单项 */
+body.light-theme .dropdown-item,
+body.light-theme #contextMenuItems a {
+    color: #1f2937;
+}
+
+/** 菜单项悬浮 */
+body.light-theme .dropdown-item:hover,
+body.light-theme #contextMenuItems a:hover {
+    background-color: #f3f4f6;
+}
+
+/** 选中的菜单项 */
+body.light-theme .dropdown-item.selected {
+    color: #4338ca;
+    background-color: #eef2ff;
+}
+
+/** 排序菜单分割线 */
+body.light-theme #customSortDropdown .dropdown-divider {
+    background-color: #e5e7eb;
+}
+
+/** 模态框表单容器 */
+body.light-theme .modal-form-container {
+    background-color: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(14px);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+/** 模态框标题和标签 */
+body.light-theme .modal-form-container h3,
+body.light-theme .modal-form-container label,
+body.light-theme #setAsSiteModal .form-group label,
+body.light-theme #createBranchModal .form-group label {
+    color: #111827;
+}
+
+/** 模态框段落 */
+body.light-theme .modal-form-container p {
+    color: #6b7280;
+}
+
+/** 模态框输入框/文本域 */
+body.light-theme .modal-form-container input,
+body.light-theme .modal-form-container textarea,
+body.light-theme #createBranchModal #createBranchNameInput {
+    color: #111827;
+    background: #f9fafb;
+    border-color: #d1d5db;
+}
+
+/** 模态框输入框/文本域聚焦 */
+body.light-theme .modal-form-container input:focus,
+body.light-theme .modal-form-container textarea:focus {
+    border-color: #4f46e5;
+}
+
+/** 文件编辑器 */
+body.light-theme #editModal .modal-content {
+    background: transparent;
+}
+
+/** 文件编辑器头部 */
+body.light-theme #editModal .modal-header {
+    background: #fff;
+}
+
+/** 文件编辑器内容区 */
+body.light-theme #fileContent {
+    color: #1f2937;
+    background-color: #f9fafb;
+    border: 1px solid #129348;
+}
+
+/** 文件编辑器控制按钮 */
+body.light-theme #closeEditModal,
+body.light-theme #toggleMaximizeModal,
+body.light-theme #revertEditBtn,
+body.light-theme #searchInFileBtn {
+    color: #4b5563;
+}
+
+/** 主菜单 */
+body.light-theme #mainMenuPopup {
+    background-color: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(14px);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+/** 主菜单分割线 */
+body.light-theme #mainMenuPopup .user-profile-header::after {
+    background: linear-gradient(to right, transparent, #d1d5db, transparent);
+}
+
+/** 用户名 */
+body.light-theme #userName {
+    color: #111827;
+    text-shadow: none;
+}
+
+/** 主菜单项 */
+body.light-theme #mainMenuPopup .menu-items-container button {
+    color: #374151;
+}
+
+/** 主菜单项悬浮 */
+body.light-theme #mainMenuPopup .menu-items-container button:hover {
+    color: #111827;
+    background: #f3f4f6;
+}
+
+/** 主菜单项图标 */
+body.light-theme #mainMenuPopup .menu-items-container button i {
+    color: #6b7280;
+}
+
+/** 主菜单项图标悬浮 */
+body.light-theme #mainMenuPopup .menu-items-container button:hover i {
+    color: #4f46e5;
+    text-shadow: none;
+}
+
+/** 上传面板 */
+body.light-theme #uploadPanel {
+    color: #1f2937;
+    background-color: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(10px);
+    border-color: #e5e7eb;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/** 上传文件大小 */
+body.light-theme .upload-size {
+    color: #6b7280;
+}
+
+/** 上传进度条容器 */
+body.light-theme .upload-progress-container {
+    background: #e5e7eb;
+}
+
+/** 代理设置模态框 */
+body.light-theme #proxySettingsModal .modal-form-container {
+    height: auto;
+}
+
+/** 代理列表容器 */
+body.light-theme #proxySettingsModal .proxy-list-container {
+    background-color: rgb(240, 242, 245, 0.9);
+    border-color: rgba(200, 200, 200, 0.7);
+}
+
+/** 代理列表项 */
+body.light-theme .proxy-item {
+    background-color: rgba(255, 255, 255, 0.3);
+    border-color: #99CC66;
+}
+
+/** 激活的代理项 */
+body.light-theme .proxy-item.active {
+    background-color: rgba(79, 70, 229, 0.15);
+    border-color: rgba(79, 70, 229, 0.4);
+}
+
+/** 代理项URL */
+body.light-theme .proxy-item .proxy-url {
+    color: #1f2937;
+}
+
+/** 代理延迟文本 */
+body.light-theme .latency-text {
+    color: #6b7280;
+}
+
+/** 分支选择器 */
+body.light-theme .custom-branch-select-trigger,
+body.light-theme #setAsSiteModal .custom-branch-select-trigger,
+body.light-theme #createBranchModal .custom-branch-select-trigger {
+    color: #1f2937;
+    background-color: #f9fafb;
+    border-color: #d1d5db;
+}
+
+/** 分支选择器悬浮 */
+body.light-theme .custom-branch-select-trigger:hover {
+    border-color: #4f46e5;
+}
+
+/** 顶部仓库分支切换器 */
+body.light-theme #branchSwitcherContainer .custom-branch-select-trigger {
+    background-color: transparent;
+    border-color: rgba(0, 0, 0, 0.1);
+}
+body.light-theme #branchSwitcherContainer .custom-branch-select-trigger:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+    border-color: rgba(0, 0, 0, 0.2);
+}
+
+/** 分支选择器选项面板 */
+body.light-theme .custom-branch-select-options {
+    background-color: #ffffff;
+    border-color: #d1d5db;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/** 分支选择器选项 */
+body.light-theme .custom-branch-select-option {
+    color: #374151;
+}
+
+/** 分支选择器选项悬浮 */
+body.light-theme .custom-branch-select-option:hover {
+    background-color: #f3f4f6;
+}
+
+/** 选中的分支选择器选项 */
+body.light-theme .custom-branch-select-option.selected {
+    color: #4338ca;
+    background-color: #eef2ff;
+}
+
+/** 多选操作栏 */
+body.light-theme #multi-select-bar {
+    background-color: rgba(249, 250, 251, 0.85);
+    backdrop-filter: blur(12px);
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08);
+}
+
+/** 多选操作栏文本和按钮 */
+body.light-theme #multi-select-bar #selected-count,
+body.light-theme #multi-select-bar .action-btn,
+body.light-theme #multi-select-bar .cancel-btn {
+    color: #4b5563;
+}
+
+/** 多选操作栏按钮悬浮 */
+body.light-theme #multi-select-bar .action-btn:hover:not(:disabled) {
+    color: #10b981;
+}
+/** 多选操作栏删除按钮悬浮 */
+body.light-theme #multi-select-bar .action-btn.delete-btn:hover:not(:disabled) {
+    color: #ef4444;
+}
+/** 多选操作栏取消按钮悬浮 */
+body.light-theme #multi-select-bar .cancel-btn:hover {
+    color: #1f2937;
+}
+
+/** 多选操作栏禁用按钮 */
+body.light-theme #multi-select-bar .action-btn:disabled {
+    color: #9ca3af;
+}
+
+/** 复选框背景 */
+body.light-theme .select-checkbox-bg {
+    
+    border-color: #9ca3af;
+}
+
+
+/** 选中的复选框背景 */
+body.light-theme .file-item.selected .select-checkbox-bg {
+    background: #4f46e5;
+}
+.file-item.selected .select-checkbox-bg {
+    background: #4f46e5;
+}
+
+
+.file-item.selected {
+    border-color: #8b5cf6;
+    transform: none;
+    background-color: rgba(139, 92, 246, 0.1);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+    z-index: 2;
+}
+
+#fileList.grid .file-item.selected {
+    border-color: #8b5cf6;
+    transform: scale(1.03);
+    background-color: transparent;
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+}
+
+body.light-theme .file-item.selected {
+    border-color: #4f46e5;
+    background-color: #eef2ff;
+    box-shadow: 0 2px 6px rgba(79, 70, 229, 0.15);
+    transform: none;
+}
+
+body.light-theme #fileList.grid .file-item.selected {
+    background-color: rgba(255, 255, 255, 0.5);
+    transform: scale(1.03);
+    box-shadow: 0 4px 15px rgba(79, 70, 229, 0.2);
+}
+
+
+/** 开关滑块 */
+body.light-theme .switch .slider {
+    background-color: #ccc;
+}
+
+/** 开关按钮关闭状态 (亮色主题) */
+body.light-theme .switch input:not(:checked) + .slider {
+    /* 使用一个更清晰的中灰色，以区别于浅色背景 */
+    background-color: #bdc3c7;
+}
+
+/** 开关按钮开启状态 (亮色主题) */
+body.light-theme .switch input:checked + .slider {
+    /* 保持与暗色主题一致的品牌绿色，确保视觉统一性 */
+    background-color: #22c55e;
+}
+
+
+
+/** 右键菜单设置选项卡 */
+body.light-theme .context-menu-settings-tabs {
+    padding: 0.2rem;
+    background-color: #e5e7eb;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+}
+
+/** 右键菜单设置选项卡按钮 */
+body.light-theme .context-menu-settings-tabs .tab-btn {
+    font-weight: 500;
+    color: #4b5563;
+    background-color: transparent;
+}
+
+/** 激活的右键菜单设置选项卡按钮 */
+body.light-theme .context-menu-settings-tabs .tab-btn.active {
+    padding: 0;
+    color: #ffffff;
+    background: linear-gradient(90deg, #10b981, #22c55e);
+    border-radius: 0.3rem;
+    box-shadow: 0 2px 6px rgba(79, 70, 229, 0.3);
+}
+
+/** 右键菜单设置项 */
+body.light-theme .setting-item {
+    border-bottom-color: #e5e7eb;
+}
+
+/** API状态面板 */
+body.light-theme .api-status-panel {
+    background-color: rgba(250, 251, 252, 0.95);
+}
+
+/** API状态面板头部 */
+body.light-theme .api-status-header {
+    border-bottom-color: #e5e7eb;
+}
+
+/** API状态面板标题 */
+body.light-theme .api-status-header h5 {
+    color: #111827;
+}
+
+/** API状态面板卡片 */
+body.light-theme .api-status-card {
+    background-color: #ffffff;
+    border-color: #e5e7eb;
+}
+
+/** API状态面板卡片标题 */
+body.light-theme .api-status-card h4 {
+    color: #6b7280;
+}
+
+/** API状态面板详情文本 */
+body.light-theme .rate-limit-details p,
+body.light-theme .app-status-details p {
+    color: #374151;
+}
+
+/** API状态面板数值 */
+body.light-theme .rate-limit-details span {
+    color: #111827;
+}
+
+/** Token权限标签 */
+body.light-theme .token-scope {
+    color: #4b5563;
+    background-color: #e5e7eb;
+}
+
+/** 账号列表项 */
+body.light-theme .account-item {
+    background-color: #f9fafb;
+    border-color: #e5e7eb;
+}
+
+/** 激活的账号列表项 */
+body.light-theme .account-item.active {
+    background-color: #eef2ff;
+    border-color: #a5b4fc;
+}
+
+/** 账号列表容器 */
+body.light-theme #accountListContainer {
+    color: #1f2937;
+}
+
+/** 添加账号按钮 */
+body.light-theme #showAddAccountModalBtn {
+    color: #ffffff;
+    background-color: #4f46e5;
+}
+
+/** 代理快速切换按钮非激活状态 */
+body.light-theme #proxyQuickToggle:not(.active) {
+    color: #4b5563;
+}
+
+/** 编辑器遮罩 */
+body.light-theme #editorOverlay {
+    background-color: rgba(249, 250, 251, 0.75);
+}
+
+/** 编辑器遮罩加载动画 */
+body.light-theme #editorOverlay .fa-spinner {
+    border-top-color: #4f46e5;
+    border-bottom-color: #4f46e5;
+}
+
+/** 编辑器脚部 */
+body.light-theme #editModal .modal-footer {
+    background: linear-gradient(to top, #f9fafb, #ffffff);
+    border-top-color: #e5e7eb;
+}
+
+/** 编辑器脚部按钮 */
+body.light-theme #editModal .modal-footer button {
+    color: black;
+}
+
+/** 编辑器脚部按钮悬浮 */
+body.light-theme #editModal .modal-footer button:hover:not(:disabled) {
+    color: #2575fc;
+}
+
+/** 禁用的编辑器脚部按钮 */
+body.light-theme #editModal .modal-footer button:disabled {
+    color: #d1d5db;
+    opacity: 0.7;
+}
+
+/** 已修改状态的保存按钮 */
+body.light-theme #editModal .modal-footer #saveEdit.modified {
+    color: #1f2937;
+    text-shadow: none;
+}
+
+/** 未修改状态的保存按钮 */
+body.light-theme #editModal .modal-footer #saveEdit:not(.modified) {
+    color: #9ca3af;
+    opacity: 0.7;
+}
+
+/** 编辑器搜索面板 */
+body.light-theme #editorSearchPanel {
+    background-color: rgba(255, 255, 255, 0.7);
+    border-color: rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/** 编辑器搜索输入框 */
+body.light-theme #editorSearchInput {
+    color: #1f2937;
+    border-bottom-color: #6b7280;
+}
+
+/** 编辑器搜索匹配计数 */
+body.light-theme #editorSearchMatchCount {
+    color: #4b5563;
+}
+
+/** 编辑器搜索按钮 */
+body.light-theme #editorSearchPanel button {
+    color: #4b5563;
+}
+
+/** 编辑器搜索按钮悬浮 */
+body.light-theme #editorSearchPanel button:hover {
+    color: #1f2937;
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+/** 编辑器错误提示 */
+body.light-theme .edit-status.error {
+    color: #111827;
+    background: #fff;
+}
+
+/** 代理延迟文本颜色 */
+body.light-theme .latency-text.green {
+    color: #22c55e;
+}
+body.light-theme .latency-text.yellow {
+    color: #f59e0b;
+}
+body.light-theme .latency-text.red {
+    color: #ef4444;
+}
+
+/** 网站发布列表 */
+body.light-theme .publish-list {
+    background-color: #f3f4f6;
+    border-color: #d1d5db;
+}
+
+/** 网站发布列表项 */
+body.light-theme .publish-item {
+    background-color: #ffffff;
+    border-color: #e5e7eb;
+}
+
+/** 网站发布列表项悬浮 */
+body.light-theme .publish-item:hover {
+    background-color: #f9fafb;
+    border-color: #a5b4fc;
+}
+
+/** 网站发布项仓库名 */
+body.light-theme .publish-item .repo-name {
+    color: #111827;
+}
+
+/** 网站发布列表空状态 */
+body.light-theme .publish-list-empty,
+body.light-theme .publish-list-empty::before {
+    color: #9ca3af;
+}
+
+/** 网站发布列表次要按钮 */
+body.light-theme #publishManagerModal .publish-item button{
+    color: #ffffff;
+    background: linear-gradient(90deg, #10b981, #22c55e);
+}
+body.light-theme #publishManagerModal .publish-item .btn-unpublish {
+color: #ffffff; 
+background: #b91c1c; / 使用一个深红色作为背景 /
+border: none;
+opacity: 1; / 使用完全不透明 /
+transition: background-color 0.2s; / 添加平滑过渡 */
+}
+
+/** 网站发布列表次要按钮悬浮 */
+body.light-theme #publishManagerModal .publish-item .btn-secondary:hover {
+    background-color: #d1d5db;
+}
+
+/** 删除模态框利弊清单关键字 */
+body.light-theme #deleteModal .modal-pro-con-list strong {
+    color: #111827;
+}
+
+
+
+
+
+
+
+/**
+ * ==============================================
+ * 网站发布管理弹窗 - 尺寸自定义
+ * ==============================================
+ */
+
+/* 使用 ID 选择器来精确定位网站管理弹窗 */
+#publishManagerModal .modal-form-container {
+    /* 1. 覆盖通用的宽度限制，让弹窗更宽 */
+    max-width: 600px;  /* 您可以根据喜好调整这个值，比如 500px 或 700px */
+    width: 90vw;       /* 在移动设备上，宽度为视窗的90%，提供更好的体验 */
+
+    /* 2. 自定义高度，让弹窗更高以容纳更多内容 */
+    height: auto;      /* 高度为视窗高度的75% */
+    max-height: 650px; /* 同时设置一个最大高度，防止在特大屏幕上过高 */
+
+    /* 3. 优化内部布局，确保内容可以撑开 */
+    display: flex;
+    flex-direction: column; /* 设置为列布局 */
+}
+
+/* 4. 让内部的列表区域自动填满额外的高度 */
+#publishManagerModal .publish-list {
+    flex-grow: 1; /* 这是关键！让列表元素占据所有可用的垂直空间 */
+    min-height: 160px; /* 保证一个最小高度，即使内容很少也好看 */
+}
+#publishManagerModal .loading-spinner {
+    flex-grow: 1;
+    height: 100%;
+    position: static;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+
+
+
+/* --- 网站部署管理标签页 --- */
+.publish-manager-tabs {
+    border-top: 1px solid #374151;
+    padding-top: 0.8rem;
+    
+}
+
+.publish-manager-tabs button {
+    flex: 0 1 auto; /* 核心：取消flex拉伸，让其基于内容收缩 */
+    width: auto;     /* 确保宽度由内容决定 */
+    padding-left: 1rem;  /* 增加一些左右内边距，让文字不贴边 */
+    padding-right: 1rem;
+}
+
+.btn-tab {
+    background: #374151; /* 未选中时的背景色 */
+    color: #9ca3af; /* 未选中时的文字颜色 */
+    transition: background 0.3s, color 0.3s;
+}
+
+.btn-tab.active {
+    background: linear-gradient(90deg, #10b981, #22c55e); /* 选中时的背景色 */
+    color: #ffffff; /* 选中时的文字颜色 */
+    font-weight: 600;
+}
+
+/* 亮色主题 */
+body.light-theme .publish-manager-tabs {
+    border-top-color: #e5e7eb;
+}
+
+body.light-theme .btn-tab {
+    background: #e5e7eb;
+    color: #4b5563;
+}
+
+body.light-theme .btn-tab.active {
+    background: linear-gradient(90deg, #10b981, #22c55e);
+    color: #ffffff;
+}
+
+.btn-unpublish {
+color: #ffffff; 
+background: #b91c1c; 
+border: none;
+opacity: 1; / 使用完全不透明 /
+transition: background-color 0.2s; / 添加平滑过渡 */
+}
+.btn-unpublish:hover:not(:disabled) {
+background: #991b1b; /* 悬浮时使用更深的红色 */
+}
+
+
+
+body.light-theme .btn-unpublish {
+    color: #ffffff; /* 白色文字 */
+    background: #ef4444; /* 亮色主题下使用更鲜明的红色 */
+    opacity: 1;
+    transition: background-color 0.2s;
+}
+
+body.light-theme .btn-unpublish:hover:not(:disabled) {
+    background: #dc2626; /* 悬浮时使用更深的红色 */
+}
+
+
+
+.repo-info-wrapper {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.repo-domain-display {
+    margin-top: 0.2rem;
+    font-size: 0.7rem;
+    color: #a2a7c7;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+body.light-theme .repo-domain-display {
+    color: #6b7280;
+}
+
+.publish-item-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+
+#setAsSiteModal {
+    z-index: 85;
+}
+
+
+#customDomainRepoName {
+    color: #e0e7ff;
+    font-weight: 500;
+}
+
+body.light-theme #customDomainRepoName {
+    color: #4b5563 !important;
+}
+
+
+
+/* --- 网站部署帮助模态框 --- */
+#publishHelpModal .publish-help-dialog {
+    position: relative;
+    width: 90%;
+    max-width: 380px;
+    border-radius: 0.8rem;
+    background: linear-gradient(145deg, #1e293b, #0f172a);
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: #e0e7ff;
+    transform: scale(0.95);
+    opacity: 0;
+    transition: transform 0.3s cubic-bezier(0.2, 1, 0.3, 1), opacity 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    max-height: 80vh;
+}
+
+#publishHelpModal:not(.hidden) .publish-help-dialog {
+    transform: scale(1);
+    opacity: 1;
+}
+
+#publishHelpModal .publish-help-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.8rem 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    flex-shrink: 0;
+}
+
+#publishHelpModal .publish-help-header h3 {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #c7d2fe;
+}
+
+#publishHelpModal .publish-help-header h3 i {
+    color: #818cf8;
+}
+
+#publishHelpModal .publish-help-content {
+    padding: 0.5rem 1.2rem 1.2rem 1.2rem;
+    overflow-y: auto;
+    line-height: 1.6;
+}
+
+#publishHelpModal .publish-help-content h4 {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #a5b4fc;
+    margin: 1rem 0 0.5rem 0;
+    padding-bottom: 0.1rem;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+#publishHelpModal .publish-help-content h4 i {
+    font-size: 0.8rem;
+}
+
+#publishHelpModal .publish-help-content p {
+    font-size: 0.78rem;
+    color: #d1d5db;
+    margin: 0.5rem 0;
+}
+
+#publishHelpModal .publish-help-content ul {
+    list-style: none;
+    padding-left: 0.5rem;
+    font-size: 0.78rem;
+}
+
+#publishHelpModal .publish-help-content li {
+    position: relative;
+    padding-left: 1.2rem;
+    margin-bottom: 0.5rem;
+    color: #d1d5db;
+}
+
+#publishHelpModal .publish-help-content li::before {
+    content: '✓';
+    position: absolute;
+    left: 0;
+    top: 2px;
+    font-weight: bold;
+    color: #22c55e;
+}
+
+#publishHelpModal .publish-help-content code {
+    background-color: rgba(255, 255, 255, 0.1);
+    padding: 0.1rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    color: #c7d2fe;
+}
+
+/* --- 亮色主题适配 --- */
+body.light-theme #publishHelpModal .publish-help-dialog {
+    background: linear-gradient(145deg, #ffffff, #f7f8fa);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e5e7eb;
+    color: #1f2937;
+}
+
+body.light-theme #publishHelpModal .publish-help-header {
+    border-bottom-color: #e5e7eb;
+}
+
+body.light-theme #publishHelpModal .publish-help-header h3 {
+    color: #374151;
+}
+
+body.light-theme #publishHelpModal .publish-help-header h3 i {
+    color: #4f46e5;
+}
+
+body.light-theme #publishHelpModal .publish-help-content h4 {
+    color: #4338ca;
+    border-bottom-color: #f3f4f6;
+}
+
+body.light-theme #publishHelpModal .publish-help-content p,
+body.light-theme #publishHelpModal .publish-help-content li {
+    color: #4b5563;
+}
+
+body.light-theme #publishHelpModal .publish-help-content code {
+    background-color: #eef2ff;
+    color: #4338ca;
+}
+
+header {
+        position: relative;
+    }
+
+    #globalSearchContainer {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        padding: 0 0.7rem;
+        
+        z-index: 1;
+    }
+    
+    #globalSearchInput {
+        width: 100%;
+    }
+
+    body.light-theme #globalSearchContainer {
+        background-color: #f0f2f5;
+    }
+
+
+#globalSearchContainer {
+    position: absolute;
+    top: 50%;
+    right: 150px;
+    transform: translateY(-50%);
+    width: calc(100% - 160px);
+    max-width: 400px;
+    transition: opacity 0.3s, transform 0.3s;
+}
+
+#globalSearchContainer.hidden {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-50%) scale(0.95);
+}
+
+#globalSearchInput {
+    width: 100%;
+    padding: 0.3rem 0.6rem;
+    font-size: 0.8rem;
+    color: #f3f4f6;
+    background: #030712;
+    border: 1px solid #374151;
+    border-radius: 0.3rem;
+    outline: 0;
+}
+
+body.light-theme #globalSearchInput {
+    color: #111827;
+    background: #f9fafb;
+    border-color: #d1d5db;
+}
+
+.search-result-item {
+    border-left: 3px solid #4f46e5;
+    padding-left: 1rem !important;
+}
+
+.search-result-repo {
+    font-size: 0.65rem;
+    color: #a2a7c7;
+    margin-top: 0.2rem;
+}
+
+body.light-theme .search-result-repo {
+    color: #6b7280;
+}
+
+
+
+
+
+.repo-actions {
+    margin-left: auto;
+    padding-left: 0.5rem;
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.star-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.1rem;
+    padding: 0.5rem;
+    border-radius: 50%;
+    color: #9ca3af;
+    transition: color 0.2s, transform 0.2s;
+}
+
+.star-btn:hover {
+    transform: scale(1.2);
+}
+
+.star-btn i.starred {
+    color: #facc15;
+    text-shadow: 0 0 8px rgba(250, 204, 21, 0.5);
+}
+
+body.light-theme .star-btn {
+    color: #6b7280;
+}
+
+
+.repo-name-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.repo-name-header .file-name {
+    flex-grow: 1;
+}
+
+.star-text-btn {
+    flex-shrink: 0;
+    padding: 0.2rem 0.6rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    border: 1px solid #4b5563;
+    color: #9ca3af;
+    background-color: transparent;
+    border-radius: 0.3rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.star-text-btn:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: #6b7280;
+}
+
+.star-text-btn.starred {
+    border-color: #facc15;
+    color: #facc15;
+    background-color: rgba(250, 204, 21, 0.1);
+}
+
+.star-text-btn.starred:hover {
+    background-color: rgba(250, 204, 21, 0.2);
+}
+
+body.light-theme .star-text-btn {
+    border-color: #d1d5db;
+    color: #6b7280;
+}
+
+body.light-theme .star-text-btn:hover {
+    background-color: #f3f4f6;
+    border-color: #9ca3af;
+}
+
+body.light-theme .star-text-btn.starred {
+    border-color: #f59e0b;
+    color: #f59e0b;
+    background-color: #fffbeb;
+}
+
+
+.repo-item-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+
+.fork-text-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 24px;
+    padding: 0.2rem;
+    font-size: 0.8rem;
+    border: 1px solid #4b5563;
+    color: #9ca3af;
+    background-color: transparent;
+    border-radius: 0.3rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.fork-text-btn:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: #6b7280;
+    color: #e0e7ff;
+}
+
+body.light-theme .fork-text-btn {
+    border-color: #d1d5db;
+    color: #6b7280;
+}
+
+body.light-theme .fork-text-btn:hover {
+    background-color: #f3f4f6;
+    border-color: #9ca3af;
+    color: #1f2937;
+}
+
+
+
+.fork-origin-info {
+    font-size: 0.6rem;
+    color: #9ca3af;
+    margin-bottom: 0.2rem;
+    word-break: break-all;
+}
+
+body.light-theme .fork-origin-info {
+    color: #6b7280;
+}
+
+
+
+
+
+/* --- 使用指南弹窗样式修复 --- */
+#usageGuideModal .publish-help-dialog {
+    position: relative;
+    width: 90%;
+    max-width: 380px;
+    border-radius: 0.8rem;
+    background: linear-gradient(145deg, #1e293b, #0f172a);
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: #e0e7ff;
+    transform: scale(0.95);
+    opacity: 0;
+    transition: transform 0.3s cubic-bezier(0.2, 1, 0.3, 1), opacity 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    max-height: 80vh;
+}
+
+#usageGuideModal:not(.hidden) .publish-help-dialog {
+    transform: scale(1);
+    opacity: 1;
+}
+
+#usageGuideModal .publish-help-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.8rem 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    flex-shrink: 0;
+}
+
+#usageGuideModal .publish-help-header h3 {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #c7d2fe;
+}
+
+#usageGuideModal .publish-help-header h3 i {
+    color: #818cf8;
+}
+
+#usageGuideModal .publish-help-content {
+    padding: 0.5rem 1.2rem 1.2rem 1.2rem;
+    overflow-y: auto;
+    line-height: 1.6;
+}
+
+#usageGuideModal .publish-help-content h4 {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #a5b4fc;
+    margin: 1rem 0 0.5rem 0;
+    padding-bottom: 0.3rem;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+#usageGuideModal .publish-help-content h4 i {
+    font-size: 0.8rem;
+}
+
+#usageGuideModal .publish-help-content p {
+    font-size: 0.78rem;
+    color: #d1d5db;
+    margin: 0.5rem 0;
+}
+
+#usageGuideModal .publish-help-content ul {
+    list-style: none;
+    padding-left: 0.5rem;
+    font-size: 0.78rem;
+}
+
+#usageGuideModal .publish-help-content li {
+    position: relative;
+    padding-left: 1.2rem;
+    margin-bottom: 0.5rem;
+    color: #d1d5db;
+}
+
+#usageGuideModal .publish-help-content li::before {
+    content: '✓';
+    position: absolute;
+    left: 0;
+    top: 2px;
+    font-weight: bold;
+    color: #22c55e;
+}
+
+#usageGuideModal .publish-help-content code {
+    background-color: rgba(255, 255, 255, 0.1);
+    padding: 0.1rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    color: #c7d2fe;
+}
+
+/* 亮色主题适配 */
+body.light-theme #usageGuideModal .publish-help-dialog {
+    background: linear-gradient(145deg, #ffffff, #f7f8fa);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e5e7eb;
+    color: #1f2937;
+}
+
+body.light-theme #usageGuideModal .publish-help-header {
+    border-bottom-color: #e5e7eb;
+}
+
+body.light-theme #usageGuideModal .publish-help-header h3 {
+    color: #374151;
+}
+
+body.light-theme #usageGuideModal .publish-help-header h3 i {
+    color: #4f46e5;
+}
+
+body.light-theme #usageGuideModal .publish-help-content h4 {
+    color: #4338ca;
+    border-bottom-color: #f3f4f6;
+}
+
+body.light-theme #usageGuideModal .publish-help-content p,
+body.light-theme #usageGuideModal .publish-help-content li {
+    color: #4b5563;
+}
+
+body.light-theme #usageGuideModal .publish-help-content code {
+    background-color: #eef2ff;
+    color: #4338ca;
+}
+
+
+
+
+/* --- 放在 style.css 文件中 --- */
+
+.releases-text-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem; /* 图标和文字的间距 */
+    padding: 0.2rem 0.6rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    border: 1px solid #4b5563;
+    color: #9ca3af;
+    background-color: transparent;
+    border-radius: 0.3rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.releases-text-btn:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: #6b7280;
+    color: #e0e7ff;
+}
+
+/* 亮色主题适配 */
+body.light-theme .releases-text-btn {
+    border-color: #d1d5db;
+    color: #6b7280;
+}
+
+body.light-theme .releases-text-btn:hover {
+    background-color: #f3f4f6;
+    border-color: #9ca3af;
+    color: #1f2937;
+}
+
+
+
+
+.search-result-path-list {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.search-result-path-grid {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: normal;
+    word-break: break-all;
+    line-height: 1.3;
+    max-height: calc(1.3 * 2em);
+}
+
+
+
+.proxy-url-details {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.proxy-type-label {
+    font-size: 0.65rem;
+    color: #9ca3af;
+    margin-top: 2px;
+}
+
+body.light-theme .proxy-type-label {
+    color: #6b7280;
+}
+
+
+
+body.light-theme .btn-icon.danger,
+body.light-theme .btn-icon-sm.danger {
+    color: #ef4444;
+}
+
+body.light-theme .btn-icon.danger:hover:not(:disabled),
+body.light-theme .btn-icon-sm.danger:hover:not(:disabled) {
+    background-color: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+}
+
+
+
+
+
+
+
+
+
+
+
+/* --- 侧边栏与遮罩 --- */
+#sideNav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    width: 60%;
+    height: 100%;
+    background-color: #111827;
+    padding: 1rem 0.8rem;
+    transform: translateX(-100%);
+    transition: transform .3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#sideNav.open {
+    transform: translateX(0);
+}
+
+#mainOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 900;
+    width: 100%;
+    
+    height: 100%;
+    background: rgba(0,0,0,0.6);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity .3s ease;
+}
+
+#mainOverlay.open {
+    opacity: 1;
+    visibility: visible;
+}
+
+#sideNav .user-profile-header {
+    padding-bottom: 1rem;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid #374151;
+}
+
+#sideNav ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+#sideNav .side-nav-main {
+    flex-grow: 1;
+    overflow-y: auto;
+    
+}
+
+#sideNav .side-nav-bottom {
+    flex-shrink: 0;
+    padding-top: 1rem;
+    border-top: 1px solid #374151;
+}
+
+#sideNav li a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    left: -18px;
+    padding: 0.8rem;
+    margin-bottom: 0.25rem;
+    border-radius: 6px;
+    color: #9ca3af;
+    font-size: 0.85rem;
+    font-weight: 500;
+    text-decoration: none;
+    background-color: transparent;
+    transition: color 0.2s;
+}
+
+#sideNav li a:hover,
+#sideNav li a.active {
+    color: #38bdf8;
+}
+
+#sideNav li a i {
+    width: 20px;
+    margin-right: 1rem;
+    text-align: center;
+    font-size: 0.95rem;
+    color: inherit;
+}
+
+/* 亮色主题适配 */
+body.light-theme #sideNav {
+    background-color: #f8fafc;
+    border-right: 1px solid #e5e7eb;
+}
+
+body.light-theme #sideNav .user-profile-header,
+body.light-theme #sideNav .side-nav-bottom {
+    border-color: #e5e7eb;
+}
+
+body.light-theme #sideNav li a {
+    color: #4b5563;
+}
+
+body.light-theme #sideNav li a:hover,
+body.light-theme #sideNav li a.active {
+    color: #0d6efd;
+}
+
+
+
+#sideNavToggleBtn {
+    background: transparent;
+    border: none;
+    color: #f3f4f6;
+    font-size: 0.9rem;
+    cursor: pointer;
+    padding: 0.4rem;
+    border-radius: 50%;
+    width: 36px;
+    
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
+}
+
+#sideNavToggleBtn:hover {
+    background-color: rgba(107, 114, 128, 0.2);
+}
+
+body.light-theme #sideNavToggleBtn {
+    color: #1f2937;
+}
+
+body.light-theme #sideNavToggleBtn:hover {
+    background-color: #f3f4f6;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/** ---------------- 文件图标配色 ---------------- */
+
+.fa-github {
+    color: #A78BFA !important;
+}
+
+.file-item .fa-folder {
+    background: linear-gradient(135deg, #FFC107 0%, #FF9801 100%) !important;
+    -webkit-background-clip: text !important;
+    background-clip: text !important;
+    color: transparent !important;
+    text-shadow: 0 2px 4px rgba(255, 152, 0, 0.3) !important;
+}
+
+.file-item .fa-html5 {
+    color: #E65100 !important;
+}
+.file-item .fa-css3 {
+    color: #0277BD !important;
+}
+.file-item .fa-code {
+    color: #FBC02D !important;
+}
+.file-item .fa-file-code {
+    color: #388E3C !important;
+}
+.file-item .fa-database {
+    color: #1565C0 !important;
+}
+.file-item .fa-file-text {
+    color: #546E7A !important;
+}
+.file-item .fa-file-word {
+    color: #2B579A !important;
+}
+.file-item .fa-file-excel {
+    color: #1D6F42 !important;
+}
+.file-item .fa-file-powerpoint {
+    color: #D14423 !important;
+}
+.file-item .fa-file-pdf {
+    color: #D32F2F !important;
+}
+.file-item .fa-file-image {
+    color: #7B1FA2 !important;
+}
+.file-item .fa-file-audio {
+    color: #D81B60 !important;
+}
+.file-item .fa-light.fa-video {
+    color: #0097A7 !important;
+}
+.file-item .fa-file-archive {
+    color: #06a655 !important;
+}
+.file-item .fa-git {
+    color: #F05033 !important;
+}
+.file-item .fa-cog,
+.file-item .fa-cogs {
+    color: #616161 !important;
+}
+.file-item .fa-android {
+    color: #A4C639 !important;
+}
+.file-item .fa-apple {
+    color: #9E9E9E !important;
+}
+.file-item .fa-font {
+    color: #00796B !important;
+}
+.file-item .fa-file {
+    color: #B0BEC5 !important;
+}
+
+
+
+/**
+ * ==============================================
+ * UI控件图标 - 功能化独立单色系统 (V2 - 包含长按菜单)
+ * ==============================================
+ * 说明：为每个UI功能图标（包括长按菜单）赋予独立的、有意义的颜色。
+ * 文件列表中的文件类型图标不受此影响。
+ */
+
+/* --- 强制重置，确保单色生效 --- */
+header button i,  #toolbar button i, #sideNav a i, 
+.modal-footer button i, .btn-icon i, .btn-icon-sm i,
+#contextMenuItems a i { /* 新增：包含长按菜单图标 */
+    background: none !important;
+    text-shadow: none !important;
+    -webkit-background-clip: initial !important;
+    background-clip: initial !important;
+    transition: transform 0.2s ease, color 0.2s ease, filter 0.2s ease;
+}
+
+/* --- 1. 头部图标 --- */
+#sideNavToggleBtn i { color: #34D399 !important; } /* 侧边栏/用户菜单: 紫罗兰色 */
+#viewStarredBtn i { color: #FACC15 !important; } /* 星标: 金黄色 */
+#globalSearchToggleBtn i { color: #38BDF8 !important; } /* 全局搜索: 天蓝色 */
+#menuThemeToggle i { color: #93C5FD !important; } /* 主题切换: 淡蓝色 */
+
+/* --- 2. 底部导航栏图标 --- */
+#backBtn i { color: #60A5FA !important; } /* 返回/上一步: 导航蓝 */
+#newFileBtn i { color: #60A5FA !important; } /* 前进/下一步: 导航蓝 */
+#newFolderBtn i { color: #4ADE80 !important; } /* 新建(仓库/文件夹): 创建绿 */
+#uploadBtn i { color: #2DD4BF !important; } /* 上传/滚动: 功能青色 */
+
+/* --- 3. 仓库内工具栏图标 --- */
+#searchToggleBtn i { color: #38BDF8 !important; } /* 本地搜索: 天蓝色 */
+/* --- 修复代理开关图标颜色状态 --- */
+
+/* 默认/关闭状态：灰色 (覆盖原有的单色强制设置) */
+#proxyQuickToggle i {
+    color: #6b7280 !important;
+    transition: color 0.3s ease;
+}
+
+/* 激活/开启状态：高亮 (保持原设计的青绿色) */
+#proxyQuickToggle.active i {
+    color: #34D399 !important;
+}
+
+/* 亮色主题适配 - 关闭状态：浅灰色 */
+body.light-theme #proxyQuickToggle i {
+    color: #9ca3af !important;
+}
+
+/* 亮色主题适配 - 开启状态 */
+body.light-theme #proxyQuickToggle.active i {
+    color: #34D399 !important;
+}
+#sortToggleBtn i { color: #FB923C !important; } /* 排序: 活力橙 */
+#multiSelectToggleBtn i { color: #C084FC !important; } /* 多选: 选择紫 */
+#viewToggleBtn i { color: #A5B4FC !important; } /* 视图切换: 视图蓝 */
+
+
+
+/* --- 6. 文件编辑器底部图标 (新增) --- */
+#revertEditBtn i { color: #FB923C !important; } /* 撤销: 活力橙 */
+#searchInFileBtn i { color: #38BDF8 !important; } /* 搜索: 天蓝色 */
+#toggleMaximizeModal i { color: #A5B4FC !important; } /* 全屏: 视图蓝 */
+#cancelEdit i { color: #A78BFA !important; } /* 取消: 紫罗兰色 */
+
+
+.btn-cancel {
+    color: #e2e8f0;
+    background: linear-gradient(135deg, #4b5563 0%, #374151 100%) !important;
+    border: none !important;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+
+
+
+
+body.light-theme .btn-cancel:hover:not(:disabled),
+body.light-theme #cancelEdit:hover {
+    color: #e2e8f0;
+    background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%) !important;
+    box-shadow: 0 5px 12px rgba(0, 0, 0, 0.15);
+}
+
+#saveEdit i { color: #34D399 !important; } /* 保存: 下载/成功绿 */
+
+
+/* --- 4. 侧边栏菜单图标 --- */
+#menuProxySettings i { color: #F472B6 !important; } /* 代理设置: 网络粉 */
+#menuContextMenuSettings i { color: #C084FC !important; } /* 菜单设置: 选择紫 */
+#menuBatchPublishSites i { color: #2DD4BF !important; } /* 网站部署: 功能青色 */
+#ybp i { color: #FB923C !important; } /* 数据监控: 活力橙 */
+#menuUsageGuide i { color: #60A5FA !important; } /* 使用指南: 导航蓝 */
+#menuSwitchAccount i { color: #4ADE80 !important; } /* 切换账号: 创建绿 */
+#menuLogout i { color: #F87171 !important; } /* 退出登录: 危险红 */
+
+/* --- 5. 长按菜单图标 (新增) --- */
+[data-action="togglePin"] i, [data-action="viewUserRepos"] i { color: #FACC15 !important; } /* 置顶/用户仓库: 金黄色 */
+[data-action="forkRepo"] i, [data-action="createBranch"] i { color: #A78BFA !important; } /* 复刻/分支: 紫罗兰色 */
+[data-action="renameRepo"] i, [data-action="rename"] i { color: #FB923C !important; } /* 重命名/设置: 活力橙 */
+[data-action="downloadRepoDirect"] i, [data-action="downloadFolder"] i, [data-action="download"] i { color: #34D399 !important; } /* 所有下载操作: 下载绿 */
+[data-action="copyMainSiteLink"] i, [data-action="copyProjectSiteLink"] i, [data-action="copyCustomDomainLink"] i, [data-action="copyRepoGitHubLink"] i, [data-action="copyLink"] i, [data-action="copyProxy"] i, [data-action="copyPagesLink"] i { color: #38BDF8 !important; } /* 所有复制链接操作: 链接蓝 */
+[data-action="edit"] i { color: #60A5FA !important; } /* 编辑: 导航蓝 */
+[data-action="unzip"] i { color: #2DD4BF !important; } /* 解压缩: 功能青色 */
+
+[data-action="viewDetails"] i { color: #2DD4BF !important; } /* 仓库信息: 功能青色 */
+[data-action="goToDirectory"] i { color: #A5B4FC !important; } /* 进入目录: 视图蓝 */
+[data-action="deleteRepo"] i, [data-action="delete"] i { color: #F87171 !important; } /* 所有删除操作: 危险红 */
+
+/* --- 6. 通用和弹窗内图标 --- */
+
+
+
+/* ==============================================
+   按钮状态颜色优化 (新建/删除/等待)
+   ============================================== */
+
+/* --- 1. 暗色主题 (默认) --- */
+
+/* 主操作按钮 (新建、保存、确认) - 翡翠绿渐变 */
+.btn-primary,
+#addEditProxySaveBtn,
+#publishManagerModal .publish-item .btn-primary,
+#publishManagerModal .set-as-main-site-btn {
+    color: #ffffff;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+    border: none;
+    box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 主按钮悬浮效果 */
+.btn-primary:hover:not(:disabled),
+#addEditProxySaveBtn:hover:not(:disabled),
+#publishManagerModal .publish-item .btn-primary:hover:not(:disabled) {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+    box-shadow: 0 6px 15px rgba(16, 185, 129, 0.35);
+    transform: translateY(-1px);
+}
+
+/* 危险操作按钮 (删除、拒绝) - 宝石红渐变 */
+.btn-danger,
+#publishManagerModal .btn-unpublish {
+    color: #ffffff;
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+    border: none;
+    box-shadow: 0 4px 10px rgba(239, 68, 68, 0.2);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 危险按钮悬浮效果 */
+.btn-danger:hover:not(:disabled),
+#publishManagerModal .btn-unpublish:hover:not(:disabled) {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
+    box-shadow: 0 6px 15px rgba(239, 68, 68, 0.35);
+    transform: translateY(-1px);
+}
+
+/* 等待/处理中状态 (统一覆盖) - 沉稳灰 */
+/* 修复了之前等待状态下颜色不统一的问题，现在统一显示为灰色背景，文字变暗 */
+.btn.btn-processing,
+.btn-primary.btn-processing,
+.btn-danger.btn-processing,
+button.btn-processing,
+#saveEdit.btn-processing {
+    color: rgba(255, 255, 255, 0.5) !important; /* 文字变暗 */
+    background: #374151 !important; /* 暗灰背景 */
+    background-image: none !important; /* 移除渐变 */
+    border-color: transparent !important;
+    cursor: wait !important;
+    box-shadow: none !important;
+    transform: none !important;
+    pointer-events: none !important; /* 禁止点击 */
+}
+
+/* --- 2. 亮色主题适配 --- */
+
+/* 亮色主题 - 主操作按钮 (清新绿) */
+body.light-theme .btn-primary,
+body.light-theme #addEditProxySaveBtn,
+body.light-theme #publishManagerModal .publish-item .btn-primary,
+body.light-theme #publishManagerModal .set-as-main-site-btn {
+    color: #ffffff;
+    background: linear-gradient(135deg, #34d399 0%, #059669 100%) !important;
+    box-shadow: 0 3px 8px rgba(16, 185, 129, 0.25);
+}
+
+body.light-theme .btn-primary:hover:not(:disabled),
+body.light-theme #addEditProxySaveBtn:hover:not(:disabled) {
+    background: linear-gradient(135deg, #10b981 0%, #047857 100%) !important;
+    box-shadow: 0 5px 12px rgba(16, 185, 129, 0.35);
+}
+
+/* 亮色主题 - 危险操作按钮 (珊瑚红) */
+body.light-theme .btn-danger,
+body.light-theme #publishManagerModal .btn-unpublish {
+    color: #ffffff;
+    background: linear-gradient(135deg, #f87171 0%, #dc2626 100%) !important;
+    box-shadow: 0 3px 8px rgba(239, 68, 68, 0.25);
+}
+
+body.light-theme .btn-danger:hover:not(:disabled),
+body.light-theme #publishManagerModal .btn-unpublish:hover:not(:disabled) {
+    background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%) !important;
+    box-shadow: 0 5px 12px rgba(239, 68, 68, 0.35);
+}
+
+/* 亮色主题 - 等待/处理中状态 - 浅灰 */
+body.light-theme .btn.btn-processing,
+body.light-theme .btn-primary.btn-processing,
+body.light-theme .btn-danger.btn-processing,
+body.light-theme button.btn-processing,
+body.light-theme #saveEdit.btn-processing {
+    color: #9ca3af !important; /* 浅灰文字 */
+    background: #e5e7eb !important; /* 浅灰背景 */
+    background-image: none !important;
+    box-shadow: none !important;
+}
+
+
+
+.btn-icon-sm i, .modal-header button i { color: #9CA3AF !important; } /* 关闭等通用图标 */
+
+/* --- 7. 交互效果：悬浮时变亮 --- */
+button:hover i, a:hover i {
+    filter: brightness(1.3);
+    transform: scale(1.1);
+}
+.btn-danger:hover i, .btn-icon.danger:hover i, .btn-icon-sm.danger:hover i, [data-action="deleteRepo"]:hover i, [data-action="delete"]:hover i {
+    filter: brightness(1.1); /* 危险按钮悬浮时保持红色系 */
+}
+
+/* --- 8. 浅色主题适配 --- */
+body.light-theme header button i,
+
+body.light-theme #toolbar button i,
+body.light-theme #sideNav a i,
+body.light-theme #contextMenuItems a i { /* 新增：包含长按菜单图标 */
+    filter: brightness(0.8) saturate(1.2);
+}
+body.light-theme button:hover i,
+body.light-theme a:hover i {
+    filter: brightness(0.9) saturate(1.3);
+}
+body.light-theme .btn-icon-sm i, 
+body.light-theme .modal-header button i {
+    color: #6B7280 !important;
+}
+
+.repo-details-dialog {
+    position: relative;
+    width: 90%;
+    max-width: 380px;
+    border-radius: 0.8rem;
+    background: linear-gradient(145deg, #1e293b, #0f172a);
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: #e0e7ff;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    padding: 1.2rem;
+    transform: scale(0.95);
+    opacity: 0;
+    transition: transform 0.3s cubic-bezier(0.2, 1, 0.3, 1), opacity 0.3s ease;
+}
+
+#repoDetailsModal:not(.hidden) .repo-details-dialog {
+    transform: scale(1);
+    opacity: 1;
+}
+
+.repo-details-header {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+}
+
+.repo-details-header img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.2);
+}
+
+.repo-details-title {
+    flex-grow: 1;
+}
+
+.repo-details-title h3 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #ffffff;
+    word-break: break-all;
+}
+
+.repo-details-title p {
+    margin: 0;
+    font-size: 0.75rem;
+    color: #a5b4fc;
+}
+
+#repoDetailsCloseBtn {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+}
+
+.repo-details-stats {
+    display: flex;
+    gap: 1rem;
+    padding-bottom: 0.8rem;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    font-size: 0.8rem;
+    color: #d1d5db;
+}
+
+.repo-details-stats span {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.repo-details-stats i {
+    color: #93c5fd;
+}
+
+.repo-details-body {
+    max-height: 150px;
+    overflow-y: auto;
+    font-size: 0.8rem;
+    line-height: 1.6;
+    color: #d1d5db;
+}
+
+.repo-details-body p {
+    margin: 0;
+}
+
+.repo-details-topics {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.repo-details-topics .topic-tag {
+    background-color: rgba(79, 70, 229, 0.3);
+    color: #c7d2fe;
+    padding: 0.2rem 0.6rem;
+    border-radius: 9999px;
+    font-size: 0.65rem;
+    font-weight: 500;
+}
+
+.repo-details-meta {
+    font-size: 0.7rem;
+    color: #9ca3af;
+    padding-top: 0.8rem;
+    border-top: 1px solid rgba(255,255,255,0.1);
+}
+
+.repo-details-meta p {
+    margin: 0.3rem 0;
+}
+
+.repo-details-meta strong {
+    color: #4ADE80;
+    font-weight: 500;
+}
+
+.repo-details-footer {
+    margin-top: 0.5rem;
+}
+
+.repo-details-footer .btn {
+    width: 100%;
+}
+
+body.light-theme .repo-details-dialog {
+    background: linear-gradient(145deg, #ffffff, #f7f8fa);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e5e7eb;
+    color: #1f2937;
+}
+
+body.light-theme .repo-details-header img {
+    border-color: rgba(0,0,0,0.1);
+}
+
+body.light-theme .repo-details-title h3 {
+    color: #111827;
+}
+
+body.light-theme .repo-details-title p {
+    color: #FB923C;
+}
+
+body.light-theme .repo-details-stats {
+    border-bottom-color: #e5e7eb;
+    color: #4b5563;
+}
+
+body.light-theme .repo-details-stats i {
+    color: #2DD4BF;
+}
+
+body.light-theme .repo-details-body {
+    color: #374151;
+}
+
+body.light-theme .repo-details-topics .topic-tag {
+    background-color: #eef2ff;
+    color: #4f46e5;
+}
+
+body.light-theme .repo-details-meta {
+    border-top-color: #e5e7eb;
+    color: #6b7280;
+}
+
+body.light-theme .repo-details-meta strong {
+    color: #4ADE80;
+}
+
+
+
+
+/* --- 搜索历史记录 (功能增强版) --- */
+
+#globalSearchHistoryContainer {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin-top: 6px;
+    background-color: #111827;
+    border: 1px solid #374151;
+    border-radius: 0.4rem;
+    padding-top: 0.3rem;
+    z-index: 10;
+    max-height: 280px;
+    overflow-y: auto;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* 历史记录条目样式 */
+#globalSearchHistoryContainer .history-item {
+    text-align: center;
+    padding: 0.7rem 1rem;
+    color: #d1d5db;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+/* 悬停效果 */
+#globalSearchHistoryContainer .history-item:hover {
+    background-color: rgba(107, 114, 128, 0.1);
+}
+
+/* 新增: 清空历史记录按钮容器 */
+.search-history-footer {
+    padding: 0.5rem 1rem;
+    text-align: center;
+    border-top: 1px solid #374151;
+    margin-top: 0.3rem;
+    
+}
+
+/* 新增: 清空按钮 */
+#clearSearchHistoryBtn {
+    background-color: green;
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    font-size: 0.7rem;
+    
+    padding:0.3rem;
+    
+    
+}
+#clearSearchHistoryBtn:hover {
+    color: #60a5fa;
+}
+
+/* --- 亮色主题适配 --- */
+body.light-theme #globalSearchHistoryContainer {
+    background-color: #ffffff;
+    border-color: #d1d5db;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+body.light-theme #globalSearchHistoryContainer .history-item {
+    color: #1f2937;
+}
+
+body.light-theme #globalSearchHistoryContainer .history-item:hover {
+    background-color: #f3f4f6;
+}
+
+body.light-theme .search-history-footer {
+    border-top-color: #e5e7eb;
+}
+
+body.light-theme #clearSearchHistoryBtn {
+    color: #6b7280;
+    background-color: #fff;
+}
+
+body.light-theme #clearSearchHistoryBtn:hover {
+    color: #4f46e5;
+}
+
+
+
+/* 待上传列表项样式 */
+.pre-upload-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px;
+    border-bottom: 1px solid #374151;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.pre-upload-item:last-child {
+    border-bottom: none;
+}
+
+.pre-upload-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.8rem;
+    margin-right: 10px;
+    color: #e0e7ff;
+}
+
+.pre-upload-size {
+    font-size: 0.7rem;
+    color: #9ca3af;
+    margin-right: 10px;
+}
+
+/* 亮色主题适配 */
+body.light-theme .pre-upload-item {
+    background: #f9fafb;
+    border-bottom-color: #e5e7eb;
+}
+body.light-theme .pre-upload-name {
+    color: #1f2937;
+}
+
+
+
+/** ---------------- 置顶仓库样式 ---------------- */
+
+/* 暗色主题 - 淡金色边框 */
+.file-item.pinned-repo {
+    border-color: rgba(253, 224, 71, 0.6) !important; /* 淡金色 */
+    box-shadow: 0 0 10px rgba(253, 224, 71, 0.05); /* 微弱的金色光晕 */
+}
+
+/* 亮色主题 - 稍微加深的金色边框 (确保在白底上可见) */
+body.light-theme .file-item.pinned-repo {
+    border-color: #eab308 !important; /* 金黄色 */
+    
+}
+
+
+
+/* 版本管理列表样式 */
+.manager-release-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    margin-bottom: 5px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+    border: 1px solid transparent;
+}
+
+.manager-release-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.manager-release-tag {
+    font-weight: bold;
+    color: #e0e7ff;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.label-prerelease {
+    font-size: 0.6rem;
+    background: #f59e0b;
+    color: #fff;
+    padding: 1px 4px;
+    border-radius: 3px;
+}
+
+.manager-release-date {
+    font-size: 0.7rem;
+    color: #9ca3af;
+    margin-top: 2px;
+}
+
+.manager-release-actions {
+    display: flex;
+    gap: 8px;
+}
+
+/* 亮色主题适配 */
+body.light-theme .manager-release-item {
+    background: #ffffff;
+    border-color: #e5e7eb;
+}
+body.light-theme .manager-release-tag {
+    color: #1f2937;
+}
+body.light-theme #createReleaseSection {
+    background: #f3f4f6 !important;
+    border-color: #e5e7eb !important;
+}
+
+
+
+footer {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 50;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    padding: 14px 16px;
+    padding-bottom: calc(12px + env(safe-area-inset-bottom));
+    background: rgba(10, 15, 30, 0.65);
+    backdrop-filter: blur(10px) saturate(180%);
+    
+    -webkit-backdrop-filter: blur(10px) saturate(180%);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+}
+
+footer button {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.2s;
+}
+
+footer button::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+    transform: translate(-50%, -50%) scale(0);
+    border-radius: 50%;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+    opacity: 0;
+    pointer-events: none;
+}
+
+footer button:active {
+    transform: scale(0.85);
+}
+
+footer button:active::before {
+    transform: translate(-50%, -50%) scale(1.5);
+    opacity: 1;
+}
+
+footer button i {
+    font-size: 0.9rem;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+    transition: filter 0.3s ease;
+    background: linear-gradient(135deg, #e2e8f0 0%, #94a3b8 100%);
+    -webkit-background-clip: text !important;
+    background-clip: text !important;
+    color: transparent !important;
+}
+
+footer #backBtn i,
+footer #newFileBtn i {
+    background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%) !important;
+    -webkit-background-clip: text !important;
+    background-clip: text !important;
+    filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.4));
+}
+
+footer #newFolderBtn i {
+    background: linear-gradient(135deg, #4ade80 0%, #16a34a 100%) !important;
+    -webkit-background-clip: text !important;
+    background-clip: text !important;
+    filter: drop-shadow(0 0 8px rgba(34, 197, 94, 0.4));
+}
+
+footer #uploadBtn i {
+    background: linear-gradient(135deg, #2dd4bf 0%, #0d9488 100%) !important;
+    -webkit-background-clip: text !important;
+    background-clip: text !important;
+    filter: drop-shadow(0 0 8px rgba(45, 212, 191, 0.4));
+}
+
+footer #newReleaseBtn i {
+    background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%) !important;
+    -webkit-background-clip: text !important;
+    background-clip: text !important;
+    filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.4));
+}
+
+footer button:hover i {
+    filter: drop-shadow(0 0 12px currentColor) brightness(1.2);
+}
+
+body.light-theme footer {
+    background: rgba(255, 255, 255, 0);
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+    box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.05);
+}
+
+body.light-theme footer button::before {
+    background: radial-gradient(circle, rgba(0, 0, 0, 0.05) 0%, transparent 70%);
+}
+
+body.light-theme footer button i {
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+body.light-theme footer #backBtn i,
+body.light-theme footer #newFileBtn i {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+    -webkit-background-clip: text !important;
+}
+
+body.light-theme footer #newFolderBtn i {
+    background: linear-gradient(135deg, #22c55e 0%, #15803d 100%) !important;
+    -webkit-background-clip: text !important;
+}
+
+body.light-theme footer #uploadBtn i {
+    background: linear-gradient(135deg, #14b8a6 0%, #0f766e 100%) !important;
+    -webkit-background-clip: text !important;
+}
+
+body.light-theme footer #newReleaseBtn i {
+    background: linear-gradient(135deg, #f59e0b 0%, #b45309 100%) !important;
+    -webkit-background-clip: text !important;
+}
+
+
+
+.effect-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.8rem 1rem;
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    user-select: none;
+}
+
+.effect-item:hover {
+    background-color: rgba(255, 255, 255, 0.15);
+}
+
+/* 激活/开启状态 */
+.effect-item.active {
+    background: linear-gradient(90deg, rgba(16, 185, 129, 0.25), rgba(6, 182, 212, 0.1));
+    border-color: #34d399;
+    box-shadow: 0 0 10px rgba(52, 211, 153, 0.1);
+}
+
+.effect-item .effect-name {
+    font-size: 0.9rem;
+    color: #e0e7ff;
+    font-weight: 500;
+}
+
+/* 开关指示器 */
+.effect-item .effect-toggle {
+    width: 36px;
+    height: 20px;
+    background-color: #4b5563;
+    border-radius: 20px;
+    position: relative;
+    transition: background-color 0.3s;
+}
+
+.effect-item .effect-toggle::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    background-color: white;
+    border-radius: 50%;
+    transition: transform 0.3s;
+}
+
+.effect-item.active .effect-toggle {
+    background-color: #34d399;
+}
+
+.effect-item.active .effect-toggle::after {
+    transform: translateX(16px);
+}
+
+/* 亮色主题适配 */
+body.light-theme .effect-item {
+    background-color: #ffffff;
+    border-color: #e5e7eb;
+}
+body.light-theme .effect-item.active {
+    background-color: #ecfdf5;
+    border-color: #10b981;
+}
+body.light-theme .effect-item .effect-name {
+    color: #1f2937;
+}
+
+
