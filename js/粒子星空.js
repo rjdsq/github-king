@@ -1,13 +1,13 @@
-// 粒子效果
-const canvas = document.getElementById('particle-canvas'); 
+const canvas = document.createElement('canvas');
+canvas.style.cssText = "display:block; width:100%; height:100%;";
+document.body.appendChild(canvas);
+
 const ctx = canvas.getContext('2d'); 
 canvas.width = window.innerWidth; 
 canvas.height = window.innerHeight; 
 let particlesArray; 
 
-// 自定义粒子的颜色
 const particleColors = ['#00f5c3', '#ff2e88', '#66FF99', '#3366FF','#CC66FF'];
-
 
 class Particle { 
     constructor(x, y, dX, dY, size, color) { 
@@ -49,7 +49,7 @@ function initParticles() {
 
 function animateParticles() { 
     requestAnimationFrame(animateParticles); 
-    ctx.clearRect(0,0,innerWidth,innerHeight); 
+    ctx.clearRect(0,0,canvas.width,canvas.height); 
     for(let i=0;i<particlesArray.length;i++) particlesArray[i].update(); 
 }
 
@@ -61,10 +61,3 @@ window.addEventListener('resize', ()=>{
 
 initParticles(); 
 animateParticles();
-
-
-const foldTitle = document.querySelector('.lp');
-const foldContent = document.querySelector('.token-content');
-foldTitle.addEventListener('click', function() {
-  foldContent.classList.toggle('active');
-})
