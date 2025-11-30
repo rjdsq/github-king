@@ -1,155 +1,193 @@
 /**
- * 特效名称: 赛博霓虹文字 (Cyber Neon Text)
- * 描述: 漂浮的、闪烁的编程关键词，营造赛博朋克氛围
+ * 特效名称: 全局界面霓虹化 (UI Neon)
+ * 描述: 将界面上的文字、边框和图标转换为霓虹发光风格，但不影响代码编辑器内容。
  * 作者: 牡丹君 (定制版)
  */
 
 (function() {
-    // 1. 初始化 Canvas
-    const canvas = document.querySelector('canvas');
-    const ctx = canvas.getContext('2d');
-    
-    let width, height;
-    
-    // 关键词库 - 可以自己添加喜欢的词
-    const KEYWORDS = [
-        'GIT', 'PUSH', 'PULL', '404', '200', 'NULL', 'ROOT', 
-        'SUDO', 'API', 'JSON', 'XML', 'VOID', 'CONST', 'LET',
-        'FUNC', 'ASYNC', 'AWAIT', 'HEAD', 'MASTER', 'MAIN',
-        'DEBUG', 'ERROR', 'WARN', 'INFO', 'LOG', 'SRC'
-    ];
+    // 防止重复加载
+    if (document.getElementById('ui-neon-style')) return;
 
-    // 霓虹配色表
-    const COLORS = [
-        '#ff00ff', // 赛博粉
-        '#00ffff', // 电光蓝
-        '#00ff00', // 黑客绿
-        '#ff3333', // 警示红
-        '#ffff00'  // 柠檬黄
-    ];
+    // 定义霓虹色系变量
+    const neonBlue = '#00f3ff';
+    const neonPink = '#ff00ff';
+    const neonGreen = '#0aff0a';
+    const neonYellow = '#f1c40f';
+    const neonRed = '#ff3333';
 
-    // 粒子数组
-    const particles = [];
-    const PARTICLE_COUNT = 40; // 屏幕上同时存在的文字数量
-
-    // 调整尺寸
-    function resize() {
-        width = canvas.width = window.innerWidth;
-        height = canvas.height = window.innerHeight;
-    }
-    window.addEventListener('resize', resize);
-    resize();
-
-    // 2. 文字粒子类
-    class NeonWord {
-        constructor() {
-            this.reset(true);
+    // 构建 CSS
+    const css = `
+        /* --- 1. 全局文字发光基础 (排除编辑器) --- */
+        body {
+            text-shadow: 0 0 2px rgba(150, 150, 255, 0.3);
         }
 
-        reset(isInitial = false) {
-            this.x = Math.random() * width;
-            // 初始时随机分布，后续从底部生成或顶部生成
-            this.y = isInitial ? Math.random() * height : height + 50;
-            
-            // 随机速度 (负数向上漂浮)
-            this.vy = -0.5 - Math.random() * 1.5;
-            this.vx = (Math.random() - 0.5) * 0.5; // 轻微左右摆动
-
-            this.text = KEYWORDS[Math.floor(Math.random() * KEYWORDS.length)];
-            this.baseColor = COLORS[Math.floor(Math.random() * COLORS.length)];
-            
-            // 大小模拟景深 (12px - 40px)
-            this.size = 12 + Math.random() * 28;
-            
-            // 闪烁参数
-            this.opacity = Math.random() * 0.5 + 0.5;
-            this.flickerSpeed = Math.random() * 0.1;
-            this.flickerOffset = Math.random() * 100;
+        /* --- 2. 登录页 & 标题 --- */
+        .auth-header h1, 
+        .auth-header i {
+            color: #fff !important;
+            text-shadow: 
+                0 0 5px #fff,
+                0 0 10px ${neonPink},
+                0 0 20px ${neonPink},
+                0 0 40px ${neonPink} !important;
+            animation: neon-flicker 3s infinite alternate;
         }
 
-        update() {
-            this.x += this.vx;
-            this.y += this.vy;
+        /* --- 3. 顶部导航栏 --- */
+        #currentRepo {
+            color: #e0f7fa !important;
+            font-weight: bold;
+            text-shadow: 0 0 5px ${neonBlue}, 0 0 10px ${neonBlue};
+            letter-spacing: 1px;
+        }
+        
+        /* 顶部图标发光 */
+        header button i {
+            filter: drop-shadow(0 0 3px ${neonBlue});
+        }
 
-            // 模拟霓虹灯闪烁 (利用正弦波产生不规则透明度)
-            const time = Date.now() * 0.01;
-            // 基础透明度 + 随机闪烁
-            if (Math.random() < 0.05) { // 5%概率发生剧烈闪烁
-                this.opacity = Math.random(); 
-            } else {
-                this.opacity = 0.6 + Math.sin(time * this.flickerSpeed + this.flickerOffset) * 0.4;
+        /* --- 4. 文件列表 (核心区域) --- */
+        /* 列表项边框发光 */
+        .file-item {
+            border: 1px solid rgba(0, 243, 255, 0.3) !important;
+            box-shadow: inset 0 0 5px rgba(0, 243, 255, 0.1);
+            background-color: rgba(0, 10, 20, 0.6) !important;
+            transition: all 0.3s ease;
+        }
+        
+        .file-item:hover {
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.4), inset 0 0 10px rgba(0, 243, 255, 0.2);
+            border-color: ${neonBlue} !important;
+        }
+
+        /* 文件名 - 赛博绿 */
+        .file-name {
+            color: #ccffcc !important;
+            font-family: 'Courier New', monospace; /* 增加代码感 */
+            text-shadow: 0 0 3px ${neonGreen};
+            font-weight: 500;
+        }
+
+        /* 文件夹图标发光 */
+        .file-icon i.fa-folder {
+            filter: drop-shadow(0 0 5px #ff9800);
+        }
+        
+        /* 普通文件图标发光 */
+        .file-icon i:not(.fa-folder) {
+            filter: drop-shadow(0 0 4px ${neonBlue});
+        }
+
+        /* 选中状态极亮 */
+        .file-item.selected {
+            background-color: rgba(188, 19, 254, 0.2) !important;
+            border-color: ${neonPink} !important;
+            box-shadow: 0 0 15px ${neonPink} !important;
+        }
+
+        /* --- 5. 按钮与图标 --- */
+        /* 底部导航栏发光 */
+        footer {
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 -2px 10px rgba(0, 243, 255, 0.1);
+        }
+
+        footer button i {
+            filter: drop-shadow(0 0 5px currentColor);
+        }
+
+        /* 通用按钮发光 */
+        .btn-primary {
+            background: transparent !important;
+            border: 1px solid ${neonGreen} !important;
+            color: ${neonGreen} !important;
+            box-shadow: 0 0 5px ${neonGreen}, inset 0 0 5px ${neonGreen} !important;
+            text-shadow: 0 0 3px ${neonGreen};
+        }
+        
+        .btn-primary:hover {
+            background: ${neonGreen} !important;
+            color: #000 !important;
+            box-shadow: 0 0 15px ${neonGreen} !important;
+            text-shadow: none;
+        }
+
+        .btn-danger {
+            background: transparent !important;
+            border: 1px solid ${neonRed} !important;
+            color: ${neonRed} !important;
+            box-shadow: 0 0 5px ${neonRed}, inset 0 0 5px ${neonRed} !important;
+            text-shadow: 0 0 3px ${neonRed};
+        }
+
+        /* --- 6. 弹窗与侧边栏 --- */
+        .modal-form-container, 
+        .context-menu-item, 
+        #sideNav, 
+        #contextMenu {
+            background-color: rgba(10, 15, 30, 0.95) !important;
+            border: 1px solid ${neonBlue} !important;
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.2) !important;
+        }
+
+        .modal-title-text {
+            text-shadow: 0 0 8px ${neonBlue};
+            color: #fff !important;
+        }
+
+        /* 侧边栏链接 */
+        #sideNav li a {
+            color: #a2a7c7;
+            transition: 0.3s;
+        }
+        #sideNav li a:hover, 
+        #sideNav li a.active {
+            color: #fff;
+            text-shadow: 0 0 5px ${neonPink}, 0 0 10px ${neonPink};
+        }
+
+        /* --- 7. 【关键】保护编辑器内容原样显示 --- */
+        /* 强制覆盖，取消编辑器内的所有发光效果，保持高亮清晰 */
+        #editModal .modal-content,
+        #fileContent,
+        #fileContent::selection,
+        .editor-container {
+            text-shadow: none !important;
+            box-shadow: none !important;
+            filter: none !important;
+            font-family: monospace !important; /* 确保字体正常 */
+        }
+        
+        /* 仅让编辑器的边框稍微发一点光，作为容器边界 */
+        #fileContent {
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+        }
+
+        /* --- 8. 闪烁动画定义 --- */
+        @keyframes neon-flicker {
+            0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% {
+                opacity: 1;
+                text-shadow: 
+                    0 0 5px #fff,
+                    0 0 10px ${neonPink},
+                    0 0 20px ${neonPink};
             }
-            // 限制透明度范围
-            this.opacity = Math.max(0.1, Math.min(1, this.opacity));
-
-            // 超出屏幕顶部重置
-            if (this.y < -50) {
-                this.reset(false);
+            20%, 24%, 55% {
+                opacity: 0.5;
+                text-shadow: none;
             }
         }
+    `;
 
-        draw() {
-            ctx.save();
-            
-            // 设置字体
-            ctx.font = `bold ${this.size}px "Courier New", monospace`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
+    // 创建 style 标签并注入
+    const style = document.createElement('style');
+    style.id = 'ui-neon-style';
+    style.innerHTML = css;
+    document.head.appendChild(style);
 
-            // 关键：设置发光效果
-            // 1. 阴影作为外发光
-            ctx.shadowBlur = 15;
-            ctx.shadowColor = this.baseColor;
-            
-            // 2. 填充样式 (核心亮白，边缘带色)
-            // 使用 rgba 控制闪烁
-            ctx.fillStyle = this.hexToRgba(this.baseColor, this.opacity);
-            
-            // 3. 描边样式 (增加霓虹管的感觉)
-            // 只有大字体才描边，避免小字体太乱
-            if (this.size > 25) {
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
-                ctx.lineWidth = 1;
-                ctx.strokeText(this.text, this.x, this.y);
-            }
-
-            ctx.fillText(this.text, this.x, this.y);
-
-            ctx.restore();
-        }
-
-        // 辅助：Hex转Rgba
-        hexToRgba(hex, alpha) {
-            const r = parseInt(hex.slice(1, 3), 16);
-            const g = parseInt(hex.slice(3, 5), 16);
-            const b = parseInt(hex.slice(5, 7), 16);
-            return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-        }
+    // 提示用户
+    if (typeof showToast === 'function') {
+        showToast('UI 霓虹模式已激活', 'success');
     }
-
-    // 初始化粒子
-    for (let i = 0; i < PARTICLE_COUNT; i++) {
-        particles.push(new NeonWord());
-    }
-
-    // 3. 动画循环
-    function animate() {
-        // 清空画布 (完全清空，保持透明背景)
-        ctx.clearRect(0, 0, width, height);
-
-        // 可选：为了增强光晕，可以使用 'lighter' 或 'screen' 混合模式
-        // 但要注意这可能导致文字重叠处过亮，这里我们只在绘制时开启
-        ctx.globalCompositeOperation = 'screen';
-
-        particles.forEach(p => {
-            p.update();
-            p.draw();
-        });
-
-        ctx.globalCompositeOperation = 'source-over'; // 恢复默认
-
-        requestAnimationFrame(animate);
-    }
-
-    animate();
 })();
