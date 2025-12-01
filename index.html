@@ -9,7 +9,8 @@
 		</title>
 		<link rel="stylesheet" href="./style.css">
 		<link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/font-awesome/7.0.0/css/all.min.css">
-		  <!-- 放在 </head> 之前 -->
+		 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+		  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script>
     (function() {
         try {
@@ -84,10 +85,8 @@
         <div class="token-content">
         
         <ol>
-        <li>公共令牌：
-            <small>经典令牌：
-
-细粒度令牌：</small></li>
+        
+        
             <li>复制下面官网链接，直达令牌生成界面：
             <small>https://github.com/settings/tokens/new </small></li>
             <li>在浏览器中粘贴链接并登录账号
@@ -124,6 +123,7 @@
 
 
 <header>
+
 				<div class="header-left">
 				<!-- class github图标 -->
 					
@@ -364,10 +364,10 @@
     <ul class="side-nav-main">
         <li><a href="javascript:void(0);" id="menuProxySettings"><i class="fa-solid fa-gears"></i>代理设置</a></li>
         <li><a href="javascript:void(0);" id="menuContextMenuSettings"><i class="fa-regular fa-hand-pointer"></i>菜单设置</a></li>
+        
         <li><a href="javascript:void(0);" id="menuBatchPublishSites"><i class="fa-solid fa-layer-group"></i>网站部署</a></li>
-        <li><a href="javascript:void(0);" id="ybp"><i class="fa-regular fa-lightbulb"></i>数据监控</a></li>
-        <li><a href="javascript:void(0);" id="menuEffectsManager"><i class="fa-solid fa-wand-magic-sparkles"></i>特效管理</a></li>
-        <li><a href="javascript:void(0);" id="menuUsageGuide"><i class="fa-regular fa-circle-question"></i>使用指南</a></li>
+        <li><a href="javascript:void(0);" id="menuEffectsManager"><i class="fa-solid fa-wand-magic-sparkles"></i>主题设置</a></li>
+        
         
     </ul>
 
@@ -379,12 +379,22 @@
     
     
         <li><a href="javascript:void(0);" id="menuSwitchAccount"><i class="fa fa-exchange"></i>切换账号</a></li>
+        
+        <li><a href="javascript:void(0);" id="ybp"><i class="fa-regular fa-lightbulb"></i>监控反馈</a></li>
+        
+        <li><a href="javascript:void(0);" id="menuUsageGuide"><i class="fa-regular fa-circle-question"></i>使用指南</a></li>
         <li><a href="javascript:void(0);" id="menuLogout"><i class="fa fa-sign-out"></i>退出登录</a></li>
     </ul>
 </aside>
 
 			<!-- 底部操作栏 -->
 			<footer>
+			<canvas id="nav-spectrum"></canvas>
+			<video id="globalAudioPlayer" width="0" height="0" style="display: none;"></video>
+			
+			
+			
+			
     <button id="backBtn" title="返回上级" class="hidden">
         <i class="fa-solid fa-arrow-left"></i>
     </button>
@@ -1232,6 +1242,87 @@
         </div>
     </div>
 </div>
+
+
+
+
+
+<!-- 仓库概览/入口模态框 -->
+<div id="repoOverviewModal" class="modal-overlay hidden">
+    <div class="repo-overview-card">
+        <!-- 头部：标题与描述 -->
+        <div class="repo-overview-header">
+            <!-- 找到 id="repoOverviewModal" 内部的 .repo-header-top 区域 -->
+<div class="repo-header-top">
+    <img id="overviewAvatar" src="" alt="Avatar">
+    <div class="repo-title-block">
+        <h3 id="overviewName">Repository Name</h3>
+        <div class="repo-badges">
+            <span id="overviewLang" class="badge">Java</span>
+            <span id="overviewSize" class="badge">9.48 MB</span>
+            <span id="overviewLicense" class="badge">MIT</span>
+        </div>
+    </div>
+    
+    <!-- [核心修改]：在关闭按钮左侧增加了一个开关容器 -->
+    <div style="display: flex; align-items: center; gap: 8px;">
+        <label class="switch" title="开启后，点击列表将直接进入仓库" style="transform: scale(0.75); transform-origin: right center;">
+            <input type="checkbox" id="overviewDirectEntryToggle">
+            <span class="slider round"></span>
+        </label>
+        <button class="btn-icon-sm" id="closeOverviewBtn" title="关闭">
+            <i class="fa fa-times"></i>
+        </button>
+    </div>
+    <!-- [修改结束] -->
+    
+</div>
+            <p id="overviewDesc">这里是仓库的描述信息...</p>
+            <div class="repo-dates">
+                <i class="fa-regular fa-clock"></i> <span id="overviewDates">Updated 7s ago</span>
+            </div>
+        </div>
+
+        <!-- 核心统计数据 (四宫格) -->
+        <div class="repo-stats-grid">
+            <div class="stat-item">
+                <span id="statIssues" class="stat-num">25</span>
+                <span class="stat-label">问题</span>
+            </div>
+            <div class="stat-item">
+                <span id="statStars" class="stat-num">912</span>
+                <span class="stat-label">星标</span>
+            </div>
+            <div class="stat-item">
+                <span id="statForks" class="stat-num">65</span>
+                <span class="stat-label">复刻</span>
+            </div>
+            <div class="stat-item">
+                <span id="statWatchers" class="stat-num">33</span>
+                <span class="stat-label">围观</span>
+            </div>
+        </div>
+
+        <!-- README 预览 / 功能区 -->
+        <div class="repo-overview-body">
+           <!-- <h4 class="section-title">README：</h4>-->
+            <div id="overviewReadme" class="readme-preview">
+                <div class="loading-spinner small"><div class="spinner-small"></div> 正在加载简介...</div>
+            </div>
+        </div>
+
+        <!-- 底部操作按钮 -->
+        <div class="repo-overview-footer">
+            <button id="overviewStarBtn" class="btn btn-secondary">
+                <i class="fa-regular fa-star"></i> 关注
+            </button>
+            <!-- 核心按钮：进入文件列表 -->
+            <button id="overviewEnterBtn" class="btn btn-primary">
+                <i class="fa-solid fa-code"></i> 进入代码浏览
+            </button>
+        </div>
+    </div>
+</div>
 <script>
 
 let currentManagingRepo = null;
@@ -1259,6 +1350,79 @@ const NON_EDITABLE_EXTS = [
     'woff', 'woff2', 'ttf', 'otf',
     'db', 'sqlite', 'mdb'
 ];
+
+
+
+
+
+
+
+// --- 核心：通用 IndexedDB 封装工具 ---
+const SimpleDB = {
+    DB_NAME: 'GithubManagerDataDB',
+    STORE_NAME: 'general_store',
+    dbPromise: null,
+    init() {
+        if (!this.dbPromise) {
+            this.dbPromise = new Promise((resolve, reject) => {
+                const request = indexedDB.open(this.DB_NAME, 1);
+                request.onupgradeneeded = (e) => {
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains(this.STORE_NAME)) {
+                        db.createObjectStore(this.STORE_NAME);
+                    }
+                };
+                request.onsuccess = (e) => resolve(e.target.result);
+                request.onerror = (e) => reject(e);
+            });
+        }
+        return this.dbPromise;
+    },
+    async get(key) {
+        const db = await this.init();
+        return new Promise((resolve) => {
+            const tx = db.transaction(this.STORE_NAME, 'readonly');
+            const req = tx.objectStore(this.STORE_NAME).get(key);
+            req.onsuccess = () => resolve(req.result);
+            req.onerror = () => resolve(null);
+        });
+    },
+    async set(key, value) {
+        const db = await this.init();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(this.STORE_NAME, 'readwrite');
+            tx.objectStore(this.STORE_NAME).put(value, key);
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => reject(tx.error);
+        });
+    },
+    async del(key) {
+        const db = await this.init();
+        return new Promise((resolve) => {
+            const tx = db.transaction(this.STORE_NAME, 'readwrite');
+            tx.objectStore(this.STORE_NAME).delete(key);
+            tx.oncomplete = () => resolve();
+        });
+    },
+    async clear() {
+        const db = await this.init();
+        return new Promise((resolve) => {
+            const tx = db.transaction(this.STORE_NAME, 'readwrite');
+            tx.objectStore(this.STORE_NAME).clear();
+            tx.oncomplete = () => resolve();
+        });
+    },
+    async keys() {
+        const db = await this.init();
+        return new Promise((resolve) => {
+            const tx = db.transaction(this.STORE_NAME, 'readonly');
+            const req = tx.objectStore(this.STORE_NAME).getAllKeys();
+            req.onsuccess = () => resolve(req.result);
+        });
+    }
+};
+
+
 
 const state = {
     
@@ -2560,42 +2724,22 @@ async function fetchUserInfo() {
 
 
 
-function loadAndCacheUserAvatar() {
-    const cacheKey = 'user_avatar_cache';
-    const CACHE_DURATION = 5 * 60 * 1000;
-    const avatarUrl = state.user.avatar_url;
-    if (!avatarUrl) return;
 
-    let cachedData = null;
+async function loadLocalAvatar() {
     try {
-        cachedData = JSON.parse(localStorage.getItem(cacheKey));
-    } catch (e) {}
-
-    if (cachedData && cachedData.url === avatarUrl && (Date.now() - cachedData.timestamp < CACHE_DURATION)) {
-        el.userAvatar.src = cachedData.url;
-        el.userAvatar.classList.remove('hidden');
-        el.userAvatarPlaceholder.classList.add('hidden');
-        return;
-    }
-
-    const tempImg = new Image();
-    tempImg.src = avatarUrl;
-    tempImg.onload = () => {
-        el.userAvatar.src = avatarUrl;
-        el.userAvatar.classList.remove('hidden');
-        el.userAvatarPlaceholder.classList.add('hidden');
-        try {
-            localStorage.setItem(cacheKey, JSON.stringify({
-                url: avatarUrl,
-                timestamp: Date.now()
-            }));
-        } catch (e) {
-            console.error("Failed to update user avatar cache.", e);
+        const login = state.user ? state.user.login : '';
+        const avatarBlob = await getAvatarFromDB('user_avatar', login);
+        
+        if (avatarBlob) {
+            if (state.localAvatar) URL.revokeObjectURL(state.localAvatar);
+            state.localAvatar = URL.createObjectURL(avatarBlob);
+        } else {
+            state.localAvatar = null;
         }
-    };
-    tempImg.onerror = () => {
-        console.error("Failed to load user avatar from network.");
-    };
+    } catch (e) {
+        console.error(e);
+        state.localAvatar = null;
+    }
 }
 
 function updateUserUI() {
@@ -2608,13 +2752,93 @@ function updateUserUI() {
         return;
     }
 
-    el.userAvatar.classList.add('hidden');
-    el.userAvatarPlaceholder.classList.remove('hidden');
-
     if (state.user && state.user.avatar_url) {
         loadAndCacheUserAvatar();
+    } else {
+        el.userAvatar.classList.add('hidden');
+        el.userAvatarPlaceholder.classList.remove('hidden');
     }
 }
+
+async function loadAndCacheUserAvatar() {
+    const avatarUrl = state.user.avatar_url;
+    if (!avatarUrl) return;
+
+    try {
+        const blob = await getAvatarFromDB('user_avatar', state.user.login);
+        if (blob) {
+            const url = URL.createObjectURL(blob);
+            state.localAvatar = url;
+            el.userAvatar.src = url;
+            el.userAvatar.classList.remove('hidden');
+            el.userAvatarPlaceholder.classList.add('hidden');
+            return;
+        }
+    } catch (e) {}
+
+    const tempImg = new Image();
+    tempImg.crossOrigin = "Anonymous"; 
+    tempImg.src = avatarUrl;
+    
+    tempImg.onload = async () => {
+        try {
+            const response = await fetch(avatarUrl);
+            const blob = await response.blob();
+            
+            await saveAvatarToDB('user_avatar', blob);
+            
+            const objectUrl = URL.createObjectURL(blob);
+            state.localAvatar = objectUrl;
+            
+            el.userAvatar.src = objectUrl;
+            el.userAvatar.classList.remove('hidden');
+            el.userAvatarPlaceholder.classList.add('hidden');
+        } catch (e) {
+            el.userAvatar.src = avatarUrl;
+            el.userAvatar.classList.remove('hidden');
+            el.userAvatarPlaceholder.classList.add('hidden');
+        }
+    };
+    
+    tempImg.onerror = () => {
+        el.userAvatar.classList.add('hidden');
+        el.userAvatarPlaceholder.classList.remove('hidden');
+    };
+}
+
+async function handleAvatarChange(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    if (!file.type.startsWith('image/')) {
+        showToast('请选择一个图片文件');
+        return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+        showToast('图片文件不能超过 5MB');
+        return;
+    }
+    
+    try {
+        await saveAvatarToDB('user_avatar', file);
+        
+        if (state.localAvatar) {
+            URL.revokeObjectURL(state.localAvatar);
+        }
+        
+        state.localAvatar = URL.createObjectURL(file);
+        updateUserUI();
+        showToast('本地头像更新成功');
+        
+        el.avatarUploadInput.value = '';
+    } catch (err) {
+        showToast('保存头像失败');
+        console.error(err);
+    }
+}
+
+
+
 
 
 async function fetchRepos(forceRefresh = false, updateView = true) {
@@ -2622,20 +2846,25 @@ async function fetchRepos(forceRefresh = false, updateView = true) {
     const cacheTimeKey = 'repos_cache_time';
     const CACHE_LIFETIME = 5 * 60 * 1000;
 
-    if (!forceRefresh && localStorage.getItem(cacheKey) && (Date.now() - parseInt(localStorage.getItem(cacheTimeKey)) < CACHE_LIFETIME)) {
-        try {
-            state.repos = JSON.parse(localStorage.getItem(cacheKey));
-            state.myRepos = [...state.repos];
-            if (updateView) {
-                renderRepoList(state.repos);
-                showRepoListView();
+    // --- 修改：从 IndexedDB 读取 ---
+    if (!forceRefresh) {
+        const cachedTime = await SimpleDB.get(cacheTimeKey);
+        if (cachedTime && (Date.now() - parseInt(cachedTime) < CACHE_LIFETIME)) {
+            const cachedData = await SimpleDB.get(cacheKey);
+            if (cachedData) {
+                state.repos = cachedData;
+                state.myRepos = [...state.repos];
+                if (updateView) {
+                    renderRepoList(state.repos);
+                    showRepoListView();
+                }
+                return;
             }
-            return;
-        } catch (e) {}
+        }
     }
 
     try {
-        const res = await fetch('https://api.github.com/user/repos?timestamp=' + Date.now(), {
+        const res = await fetch('https://api.github.com/user/repos?per_page=100&timestamp=' + Date.now(), { // 建议加上 per_page=100
             headers: { Authorization: `token ${state.token}`, 'User-Agent': 'Mozilla/5.0' },
             cache: 'no-store'
         });
@@ -2652,13 +2881,10 @@ async function fetchRepos(forceRefresh = false, updateView = true) {
         state.myRepos = [...state.repos];
 
         await autoClearCacheIfNeeded();
-        const reposString = JSON.stringify(state.repos);
-        if (reposString.length < 2 * 1024 * 1024) {
-            localStorage.setItem(cacheKey, reposString);
-            localStorage.setItem(cacheTimeKey, Date.now().toString());
-        } else {
-            localStorage.removeItem(cacheKey);
-        }
+        
+        // --- 修改：存入 IndexedDB (不再有大小限制) ---
+        await SimpleDB.set(cacheKey, state.repos);
+        await SimpleDB.set(cacheTimeKey, Date.now().toString());
         
         if (updateView) {
             renderRepoList();
@@ -2666,14 +2892,21 @@ async function fetchRepos(forceRefresh = false, updateView = true) {
         }
     } catch (err) {
         if (updateView) showToast(`加载仓库失败: ${err.message}`);
-        state.repos = [];
-        if (updateView) {
-            renderRepoList();
-            showRepoListView();
+        // 尝试加载旧缓存作为兜底
+        const oldCache = await SimpleDB.get(cacheKey);
+        if(oldCache) {
+             state.repos = oldCache;
+             state.myRepos = [...state.repos];
+             if (updateView) renderRepoList();
+        } else {
+            state.repos = [];
+            if (updateView) {
+                renderRepoList();
+                showRepoListView();
+            }
         }
     }
 }
-
 
 
 
@@ -2889,15 +3122,7 @@ function renderRepoList(reposSource) {
         item.addEventListener('touchstart', (e) => { isLongPress = false; pressTimer = setTimeout(() => { isLongPress = true; }, 500); }, { passive: true });
         item.addEventListener('touchmove', () => { clearTimeout(pressTimer); });
         item.addEventListener('touchend', () => { clearTimeout(pressTimer); });
-        item.addEventListener('click', async (e) => {
-            if (e.target.closest('button')) return; if (isLongPress) return;
-            state.repoListScrollPosition = el.main.scrollTop;
-            state.shouldAnimateList = true; state.viewingOwner = repo.owner.login;
-            try {
-                const lastBranch = localStorage.getItem(`last_branch_${repo.full_name}`);
-                navigateToRepo(repo, lastBranch || repo.default_branch);
-            } catch (error) { showToast('加载仓库失败'); console.error(error); showRepoListView(); }
-        });
+        
         item.addEventListener('contextmenu', (e) => { e.preventDefault(); clearTimeout(pressTimer); isLongPress = true; state.selectedRepo = repo; showRepoContextMenu(e, repo); });
         
         if (state.shouldAnimateList) {
@@ -3552,7 +3777,8 @@ async function loadRecursiveRepoTree() {
     try {
         const [owner, repo] = state.currentRepo.split('/');
         const currentBranchRef = state.currentBranch; 
-        const currentRepoRef = state.currentRepo; 
+        // 记录发起请求时的仓库ID，用于比对
+        const requestingRepo = state.currentRepo; 
 
         const url = `https://api.github.com/repos/${owner}/${repo}/git/trees/${currentBranchRef}?recursive=1`;
         const res = await fetch(url, {
@@ -3562,43 +3788,38 @@ async function loadRecursiveRepoTree() {
         });
         
         if (res.ok) {
+            // 关键检查：如果请求回来时，用户已经切换了仓库，则丢弃数据
+            if (state.currentRepo !== requestingRepo) return;
+
             const data = await res.json();
             if (data.truncated) {
                 showToast('仓库文件过多，部分深度目录可能需要单独加载', 'info');
             }
             state.repoTreeCache = data.tree;
 
-            const images = data.tree.filter(item => {
-                if (item.type !== 'blob') return false;
-                const ext = item.path.split('.').pop().toLowerCase();
-                return IMAGE_EXTS.includes(ext);
-            });
-
-            if (images.length > 0) {
-                let index = 0;
-                
-                const preloadBatch = () => {
-                    if (state.currentRepo !== currentRepoRef || state.currentBranch !== currentBranchRef) return;
-                    
-                    const batchSize = 4;
-                    for (let i = 0; i < batchSize && index < images.length; i++) {
-                        const item = images[index++];
-                        const encodedPath = item.path.split('/').map(p => encodeURIComponent(p)).join('/');
-                        const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${currentBranchRef}/${encodedPath}`;
-                        const img = new Image();
-                        img.src = getProxiedUrl(rawUrl);
-                    }
-
-                    if (index < images.length) {
-                        if ('requestIdleCallback' in window) {
-                            requestIdleCallback(preloadBatch);
-                        } else {
-                            setTimeout(preloadBatch, 200);
-                        }
-                    }
-                };
-                preloadBatch();
+            // === 新增：保存到 IndexedDB，供下次秒开 ===
+            // 使用与预加载相同的 Key 格式
+            if (!data.truncated) {
+                const cacheKey = `full_tree_cache:${state.currentRepo}:${state.currentBranch}`;
+                SimpleDB.set(cacheKey, {
+                    tree: data.tree,
+                    timestamp: Date.now()
+                });
             }
+            // ========================================
+
+            // 如果当前还在 loading 状态（例如 fetchFiles 失败了），尝试用 Tree 数据刷新列表
+            if (document.querySelector('#fileList .spinner')) {
+                 const localFiles = getFilesFromLocalTree(state.currentPath);
+                 if (localFiles) {
+                     state.files = localFiles;
+                     applyFiltersAndSort();
+                     renderFileList();
+                 }
+            }
+            
+            // 触发图片预加载（如果需要）
+            preloadRepoImages();
         }
     } catch (e) {
         console.error("后台树加载失败", e);
@@ -3771,8 +3992,13 @@ async function uploadSingleFile(file, index) {
     });
 }
 
-function navigateToRepo(repoData, branch, path = '', updateHistory = true) {
-    // 1. 核心修复：强制更新当前视图状态为 "文件列表"
+async function navigateToRepo(repoData, branch, path = '', updateHistory = true) {
+    // 1. 立即取消正在进行的文件请求
+    if (currentFetchController) {
+        currentFetchController.abort();
+        currentFetchController = null;
+    }
+
     state.currentView = 'file_list'; 
     state.isSearchResultsView = false;
 
@@ -3797,7 +4023,6 @@ function navigateToRepo(repoData, branch, path = '', updateHistory = true) {
 
     el.currentRepo.textContent = repoData.name;
     
-    // 切换界面显示
     toggleView(false);
     el.searchToggleBtn.classList.remove('hidden');
     el.multiSelectToggleBtn.classList.remove('hidden');
@@ -3810,13 +4035,47 @@ function navigateToRepo(repoData, branch, path = '', updateHistory = true) {
     renderPathNav();
     fetchBranches(repoData).then(renderBranchSwitcher);
     
-    // 加载文件
-    fetchFiles();
-    if (!state.repoTreeCache) {
-        loadRecursiveRepoTree();
+    // === 核心修改：优先尝试读取 IndexedDB 预加载缓存 ===
+    const cacheKey = `full_tree_cache:${repoData.full_name}:${branch}`;
+    let loadedFromCache = false;
+
+    try {
+        const cachedData = await SimpleDB.get(cacheKey);
+        
+        if (cachedData && cachedData.tree) {
+            console.log('🚀 命中后台预加载缓存，秒开渲染！');
+            state.repoTreeCache = cachedData.tree;
+            
+            // 立即从内存树中提取当前路径的文件
+            const localFiles = getFilesFromLocalTree(path);
+            
+            if (localFiles) {
+                state.files = localFiles;
+                applyFiltersAndSort();
+                renderFileList();
+                loadedFromCache = true;
+                
+                // 即使命中了缓存，也在后台默默更新一下分支信息等
+                updatePaginationUI();
+                
+                // 可选：如果希望保证数据绝对最新，可以在这里不 return，
+                // 而是让下面的 loadRecursiveRepoTree 继续在后台跑。
+                // 但为了极致速度，这里直接 return。
+                return; 
+            }
+        }
+    } catch (e) {
+        console.error('读取预加载缓存失败:', e);
+    }
+
+    // === 如果没命中缓存，走常规网络请求 ===
+    if (!loadedFromCache) {
+        fetchFiles();
+        if (!state.repoTreeCache) {
+            loadRecursiveRepoTree();
+        }
     }
     
-    // 2. 最后更新底部按钮，此时 state.currentView 已经是 'file_list' 了，逻辑就会正确
     updatePaginationUI();
 }
 
@@ -3854,15 +4113,23 @@ async function fetchFiles(forceRefresh = false, showLoader = true) {
 }
 
 async function fetchFilesFromNetwork(isInitialLoad = false, pathForFetch) {
+    if (currentFetchController) {
+        currentFetchController.abort();
+    }
+    currentFetchController = new AbortController();
+    const signal = currentFetchController.signal;
+
     try {
         const timestamp = Date.now();
         const url = `https://api.github.com/repos/${state.currentRepo}/contents/${pathForFetch}?ref=${state.currentBranch}&t=${timestamp}`;
+        
         const res = await fetch(url, {
             headers: {
                 Authorization: `token ${state.token}`,
                 'User-Agent': 'Mozilla/5.0'
             },
-            cache: 'no-store'
+            cache: 'no-store',
+            signal: signal 
         });
 
         if (!res.ok) {
@@ -3895,6 +4162,10 @@ async function fetchFilesFromNetwork(isInitialLoad = false, pathForFetch) {
 
         const cacheKey = `${state.currentRepo}:${state.currentBranch}:${pathForFetch}`;
         state.fileCache.set(cacheKey, [...fetchedFiles]);
+        
+        try {
+            await SimpleDB.set(cacheKey, [...fetchedFiles]);
+        } catch(e) {}
 
         if (pathForFetch === state.currentPath) {
             state.files = fetchedFiles;
@@ -3916,18 +4187,31 @@ async function fetchFilesFromNetwork(isInitialLoad = false, pathForFetch) {
         if (pathForFetch === state.currentPath) {
             showToast('加载文件失败: ' + err.message);
         }
-        console.error(err);
+    } finally {
+        if (currentFetchController && currentFetchController.signal === signal) {
+            currentFetchController = null;
+        }
     }
 }
-
 
 function renderFileList() {
     if (!state.loadedImageMap) state.loadedImageMap = new Map();
 
     const list = (state.displayFiles && state.displayFiles.length >= 0) ? state.displayFiles : state.files;
     const fragment = document.createDocumentFragment();
-    const imageExtensions = ['png', 'jpg', 'jpeg', 'ico', 'gif', 'webp', 'bmp', 'svg'];
+    const imageExtensions = ['png', 'jpg', 'jpeg', 'ico', 'gif', 'webp', 'bmp', 'svg']; 
     const isGridView = state.viewMode === 'grid';
+    
+    const imageCount = list.filter(f => {
+        if (f.type === 'dir') return false;
+        const ext = f.name.split('.').pop()?.toLowerCase();
+        return imageExtensions.includes(ext);
+    }).length;
+
+    let allowAnimation = state.shouldAnimateList;
+    if (imageCount > 10) {
+        allowAnimation = false;
+    }
     
     if (!list || list.length === 0) {
         const emptyState = document.createElement('div');
@@ -3946,9 +4230,10 @@ function renderFileList() {
             item.className = 'file-item';
             item.dataset.filePath = file.path; 
             
-            if (state.shouldAnimateList) {
+            if (allowAnimation) {
                 item.classList.add('file-item-enter');
-                item.style.animationDelay = `${index * 30}ms`;
+                const delay = Math.min(index * 30, 1500); 
+                item.style.animationDelay = `${delay}ms`;
             } else {
                 item.style.opacity = 1;
             }
@@ -3981,38 +4266,26 @@ function renderFileList() {
                 `;
             }
 
-            // 获取缓存的URL（如果有）或生成新的URL，用于缩略图显示
-            // 这里仅仅是为了显示缩略图，真正的点击逻辑在下方 click listener 中
             const rawUrlForThumb = file.download_url || file.html_url.replace('github.com', 'raw.githubusercontent.com').replace('/blob/', '/');
             const cachedUrlForThumb = state.loadedImageMap.get(file.path);
             const imageUrlForThumb = cachedUrlForThumb || getProxiedUrl(rawUrlForThumb);
-            const isLoaded = !!cachedUrlForThumb || file.isImageLoaded;
 
             if (isGridView) {
                 let gridContentHTML = '';
                 if (isImage) {
-                    if (isLoaded) {
-                        gridContentHTML = `
-                            <div class="file-thumbnail-container loaded" data-image-url="${escapeHtml(imageUrlForThumb)}" data-image-name="${escapeHtml(file.name)}">
-                                 <img class="file-thumbnail" src="${escapeHtml(imageUrlForThumb)}" alt="${escapeHtml(file.name)}">
-                            </div>
-                            <div class="file-info">
-                                <p class="file-name">${escapeHtml(file.name)}</p>
-                                ${fileMetaHTML}
-                            </div>
-                        `;
-                    } else {
-                        gridContentHTML = `
-                            <div class="file-thumbnail-container loading" data-image-url="${escapeHtml(imageUrlForThumb)}" data-image-name="${escapeHtml(file.name)}">
-                                 <i class="fa fa-spinner fa-spin thumbnail-loader-icon"></i>
-                                 <div class="thumbnail-error retry-trigger" title="点击重试"><i class="fa fa-repeat"></i></div>
-                            </div>
-                            <div class="file-info">
-                                <p class="file-name">${escapeHtml(file.name)}</p>
-                                ${fileMetaHTML}
-                            </div>
-                        `;
-                    }
+                    gridContentHTML = `
+                        <div class="file-thumbnail-container loading" 
+                             data-image-url="${escapeHtml(imageUrlForThumb)}" 
+                             data-image-name="${escapeHtml(file.name)}"
+                             data-image-sha="${file.sha || ''}"> 
+                             <i class="fa fa-spinner fa-spin thumbnail-loader-icon"></i>
+                             <div class="thumbnail-error retry-trigger" title="点击重试"><i class="fa fa-repeat"></i></div>
+                        </div>
+                        <div class="file-info">
+                            <p class="file-name">${escapeHtml(file.name)}</p>
+                            ${fileMetaHTML}
+                        </div>
+                    `;
                 } else {
                     gridContentHTML = `
                         <div class="file-icon"><i class="fa ${icon}"></i></div>
@@ -4026,20 +4299,15 @@ function renderFileList() {
             } else {
                 let listContentHTML = '';
                 if (isImage) {
-                     if (isLoaded) {
-                         listContentHTML = `
-                            <div class="file-thumbnail-container loaded" data-image-url="${escapeHtml(imageUrlForThumb)}" data-image-name="${escapeHtml(file.name)}">
-                               <img class="file-thumbnail" src="${escapeHtml(imageUrlForThumb)}" alt="${escapeHtml(file.name)}">
-                            </div>
-                         `;
-                     } else {
-                         listContentHTML = `
-                            <div class="file-thumbnail-container loading" data-image-url="${escapeHtml(imageUrlForThumb)}" data-image-name="${escapeHtml(file.name)}">
-                               <i class="fa fa-spinner fa-spin thumbnail-loader-icon"></i>
-                               <div class="thumbnail-error retry-trigger" title="点击重试"><i class="fa fa-repeat"></i></div>
-                            </div>
-                         `;
-                     }
+                     listContentHTML = `
+                        <div class="file-thumbnail-container loading" 
+                             data-image-url="${escapeHtml(imageUrlForThumb)}" 
+                             data-image-name="${escapeHtml(file.name)}"
+                             data-image-sha="${file.sha || ''}">
+                           <i class="fa fa-spinner fa-spin thumbnail-loader-icon"></i>
+                           <div class="thumbnail-error retry-trigger" title="点击重试"><i class="fa fa-repeat"></i></div>
+                        </div>
+                     `;
                 } else {
                     listContentHTML = `<div class="file-icon"><i class="fa ${icon}"></i></div>`;
                 }
@@ -4103,12 +4371,7 @@ function renderFileList() {
 
                         if (isMedia) {
                             const rawUrl = file.download_url || file.html_url.replace('github.com', 'raw.githubusercontent.com').replace('/blob/', '/');
-                            
-                            // [核心修改] 
-                            // 在点击查看大图时，优先检查并使用 state.loadedImageMap 中的缓存URL
-                            // 只有当缓存不存在时，才调用 getProxiedUrl 生成新链接
-                            const cachedUrl = state.loadedImageMap.get(file.path);
-                            const url = cachedUrl || getProxiedUrl(rawUrl);
+                            const url = getProxiedUrl(rawUrl);
 
                             if (AUDIO_EXTS.includes(fileExtension)) {
                                 const nameWithoutExt = file.name.substring(0, file.name.lastIndexOf('.'));
@@ -4125,22 +4388,25 @@ function renderFileList() {
                             const openPreview = () => {
                                 preview.classList.remove('hidden');
                                 uiStateStack.push(hideMediaPreview);
+                                e.preventDefault();
+                                e.stopPropagation();
                             };
 
                             if (imageExtensions.includes(fileExtension)) {
-                                img.src = url;
+                                const thumbImg = item.querySelector('.file-thumbnail');
+                                
+                                if (thumbImg && thumbImg.src && thumbImg.src.startsWith('blob:')) {
+                                    img.src = thumbImg.src;
+                                } else {
+                                    img.src = url; 
+                                }
+
                                 img.style.display = '';
                                 video.style.display = 'none';
-                                openPreview();
+                                img.style.transform = ''; 
                                 
-                                // 确保全屏查看成功的图片也进入缓存
-                                if (!cachedUrl) {
-                                    const imgForCache = new Image();
-                                    imgForCache.onload = () => {
-                                        state.loadedImageMap.set(file.path, url);
-                                    };
-                                    imgForCache.src = url;
-                                }
+                                openPreview();
+                                return;
                             } else if (VIDEO_EXTS.includes(fileExtension)) {
                                 video.src = url;
                                 video.style.display = '';
@@ -4183,59 +4449,64 @@ function renderFileList() {
 
 
 
-function loadThumbnailImage(container) {
+
+async function loadThumbnailImage(container) {
     if (container.classList.contains('loaded')) return;
 
-    // 获取关键数据
     const imageUrl = container.dataset.imageUrl;
     const imageName = container.dataset.imageName;
-    // 获取文件路径，这通常在父元素上
-    const fileItem = container.closest('.file-item');
-    const filePath = fileItem ? fileItem.dataset.filePath : null;
+    const sha = container.dataset.imageSha;
 
     if (!imageUrl) return;
 
-    // 1. 检查缓存：如果该文件路径已经有成功加载过的URL（可能是旧代理的），优先使用缓存的URL
-    // 这样切换代理后，已加载的图片不会变，也不会重新加载
-    if (filePath && state.loadedImageMap.has(filePath)) {
-        const cachedUrl = state.loadedImageMap.get(filePath);
-        renderImageToContainer(container, cachedUrl, imageName);
-        return;
+    const displayImage = (blobUrl) => {
+        const img = new Image();
+        img.className = 'file-thumbnail';
+        img.alt = imageName;
+        img.onload = () => {
+            if (!document.body.contains(container)) {
+                URL.revokeObjectURL(blobUrl);
+                return;
+            }
+            container.innerHTML = '';
+            container.appendChild(img);
+            container.classList.remove('loading', 'error');
+            container.classList.add('loaded');
+        };
+        img.src = blobUrl;
+    };
+
+    if (sha) {
+        try {
+            const cachedBlob = await ImagePersistence.get(sha);
+            if (cachedBlob) {
+                const blobUrl = URL.createObjectURL(cachedBlob);
+                displayImage(blobUrl);
+                return;
+            }
+        } catch (e) {}
     }
 
-    const img = new Image();
-    img.className = 'file-thumbnail';
-    const lastDotIndex = imageName.lastIndexOf('.');
-    const nameWithoutExt = lastDotIndex > 0 ? imageName.substring(0, lastDotIndex) : imageName;
-    img.alt = nameWithoutExt;
-    
-    img.onload = () => {
-        if (!document.body.contains(container)) return;
-        
-        // 2. 成功加载后，记录：路径 -> 这个URL
-        if (filePath) {
-            state.loadedImageMap.set(filePath, imageUrl);
-        }
-
-        renderImageToContainer(container, imageUrl, imageName, img);
-        
-        if (fileItem && filePath) {
-            const fileInState = state.files.find(f => f.path === filePath);
-            if (fileInState) fileInState.isImageLoaded = true;
-        }
-    };
-    
-    img.onerror = () => {
-        if (!document.body.contains(container)) return;
-        console.error('图片加载失败:', imageUrl);
-        container.classList.remove('loading'); 
-        container.classList.add('error');
-    };
-    
-    img.src = imageUrl;
+    fetch(imageUrl)
+        .then(async (response) => {
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            return response.blob();
+        })
+        .then(async (blob) => {
+            if (sha) {
+                await ImagePersistence.put(sha, blob);
+            }
+            const blobUrl = URL.createObjectURL(blob);
+            displayImage(blobUrl);
+        })
+        .catch((err) => {
+            if (!document.body.contains(container)) return;
+            container.classList.remove('loading');
+            container.classList.add('error');
+        });
 }
 
-// 辅助函数：渲染图片DOM
+
 function renderImageToContainer(container, url, name, imgElement = null) {
     if (!imgElement) {
         imgElement = new Image();
@@ -4387,13 +4658,11 @@ async function editFile(file) {
         const shouldBeMaximized = localStorage.getItem('editor-maximized') === 'true';
         if (shouldBeMaximized) {
             el.editModal.classList.add('maximized');
-            
             const maximizeButton = document.getElementById('toggleMaximizeModal');
             const icon = maximizeButton.querySelector('i');
             icon.classList.remove('fa-expand');
             icon.classList.add('fa-compress');
             maximizeButton.title = '恢复';
-            
         }
     } catch(e) { console.error("无法应用最大化状态:", e); }
 
@@ -4402,15 +4671,21 @@ async function editFile(file) {
     el.saveEdit.classList.toggle('hidden', !isOwner);
     el.revertEditBtn.classList.toggle('hidden', !isOwner);
     el.fileContent.readOnly = !isOwner;
+
+    // --- 修改：从 IndexedDB 读取草稿 ---
     const cacheKey = `edit_cache_${state.currentRepo}_${state.currentBranch}_${state.editingFile.path}`;
-    const cachedItem = localStorage.getItem(cacheKey);
-    if (cachedItem) {
-        try {
-            const parsedData = JSON.parse(cachedItem);
-            if (Date.now() - parsedData.timestamp < 3 * 60 * 1000) {
-                el.fileContent.value = parsedData.content;
+    
+    try {
+        const cachedItem = await SimpleDB.get(cacheKey); // 异步读取
+        if (cachedItem) {
+            if (Date.now() - cachedItem.timestamp < 24 * 60 * 60 * 1000) { // 延长有效期到24小时
+                el.fileContent.value = cachedItem.content;
                 el.editorOverlay.classList.remove('show');
-                fetch(`https://api.github.com/repos/${state.currentRepo.split('/')[0]}/${state.currentRepo.split('/')[1]}/contents/${file.path}?ref=${state.currentBranch}`, { headers: { 'Authorization': `token ${state.token}` } })
+                showToast('已恢复上次未保存的草稿', 'info');
+                
+                // 后台静默获取最新内容以获取 SHA
+                fetch(`https://api.github.com/repos/${state.currentRepo}/contents/${file.path}?ref=${state.currentBranch}`, 
+                    { headers: { 'Authorization': `token ${state.token}` } })
                     .then(res => res.json())
                     .then(data => {
                         state.originalContent = decodeURIComponent(escape(atob(data.content)));
@@ -4421,14 +4696,16 @@ async function editFile(file) {
                     });
                 return;
             } else {
-                localStorage.removeItem(cacheKey);
+                await SimpleDB.del(cacheKey);
             }
-        } catch (e) {
-            localStorage.removeItem(cacheKey);
         }
+    } catch (e) {
+        console.error('读取草稿失败', e);
     }
+
+    // 网络请求部分保持不变
     try {
-        const res = await fetch(`https://api.github.com/repos/${state.currentRepo.split('/')[0]}/${state.currentRepo.split('/')[1]}/contents/${file.path}?ref=${state.currentBranch}`, {
+        const res = await fetch(`https://api.github.com/repos/${state.currentRepo}/contents/${file.path}?ref=${state.currentBranch}`, {
             headers: { 'Authorization': `token ${state.token}`, 'User-Agent': 'Mozilla/5.0' }
         });
         if (!res.ok) throw new Error((await res.json()).message || '加载文件失败');
@@ -4456,7 +4733,7 @@ function checkContentChanges() {
 }
 
 async function saveEditedFile() {
-await autoClearCacheIfNeeded();
+    // await autoClearCacheIfNeeded(); // IndexedDB 空间很大，一般不需要频繁清理
     if (!state.editingFile || !state.fileSha) return;
     const currentContent = el.fileContent.value;
     if (currentContent === state.originalContent) {
@@ -4467,6 +4744,7 @@ await autoClearCacheIfNeeded();
     el.saveEdit.classList.add('btn-processing');
     try {
         const [owner, repo] = state.currentRepo.split('/');
+        // 注意：GitHub API 对 Base64 上传有 100MB 限制，大文件编辑需谨慎，但这里主要解决本地存储问题
         const encodedContent = btoa(unescape(encodeURIComponent(currentContent)));
         const url = `https://api.github.com/repos/${owner}/${repo}/contents/${state.editingFile.path}`;
         const requestBody = {
@@ -4485,50 +4763,38 @@ await autoClearCacheIfNeeded();
             headers: requestHeaders,
             body: JSON.stringify(requestBody)
         });
+        
+        // ... (处理 409 冲突的逻辑保持不变) ...
         if (!res.ok) {
             if (res.status === 409) {
-                const latestInfoRes = await fetch(url, { headers: { 'Authorization': `token ${state.token}`, 'User-Agent': 'Mozilla/5.0' } });
+                const latestInfoRes = await fetch(url, { headers: { 'Authorization': `token ${state.token}` } });
                 if (!latestInfoRes.ok) throw new Error('获取最新文件版本失败');
                 const latestInfo = await latestInfoRes.json();
-                
                 requestBody.sha = latestInfo.sha;
-                res = await fetch(url, {
-                    method: 'PUT',
-                    headers: requestHeaders,
-                    body: JSON.stringify(requestBody)
-                });
-                if (!res.ok) {
-                    const err = await res.json();
-                    throw new Error(`保存失败: ${err.message}`);
-                }
+                res = await fetch(url, { method: 'PUT', headers: requestHeaders, body: JSON.stringify(requestBody) });
+                if (!res.ok) { const err = await res.json(); throw new Error(`保存失败: ${err.message}`); }
             } else {
                 const err = await res.json();
                 throw new Error(`保存失败: ${err.message}`);
             }
         }
+
         const result = await res.json();
         state.fileSha = result.content.sha;
         state.originalContent = currentContent;
+        
+        // --- 修改：存入 IndexedDB (移除 100KB 限制) ---
+        const cacheKey = `edit_cache_${state.currentRepo}_${state.currentBranch}_${state.editingFile.path}`;
         try {
-    const CACHE_SIZE_LIMIT = 100 * 1024;
-    const currentContentSize = new Blob([currentContent]).size;
+            const cacheData = {
+                content: currentContent,
+                timestamp: Date.now()
+            };
+            await SimpleDB.set(cacheKey, cacheData);
+        } catch (e) {
+            console.warn("保存本地编辑缓存失败:", e);
+        }
 
-    const cacheKey = `edit_cache_${state.currentRepo}_${state.currentBranch}_${state.editingFile.path}`;
-
-    if (currentContentSize < CACHE_SIZE_LIMIT) {
-        const cacheData = {
-            content: currentContent,
-            timestamp: Date.now()
-        };
-        localStorage.setItem(cacheKey, JSON.stringify(cacheData));
-    } else {
-        localStorage.removeItem(cacheKey);
-        console.log(`文件大小 (${formatSize(currentContentSize)}) 超出本地缓存限制，已跳过缓存。`);
-    }
-} catch (e) {
-    console.warn("保存本地编辑缓存失败，可能是存储空间已满:", e);
-    showToast('本地存储空间已满，临时草稿无法保存', 'info');
-}
         el.editorOverlay.classList.remove('show');
         showToast('文件已保存');
         showSaveNotification();
@@ -5104,7 +5370,8 @@ async function handleRepoContextMenuAction(action, repo) {
 
     switch (action) {
         case 'viewDetails':
-            showRepoDetailsModal(repo);
+            // [修改] 统一使用新版概览卡片
+            showRepoOverview(repo);
             break;
             
         case 'manageReleases':
@@ -5330,7 +5597,99 @@ function hideSetAsSiteModal() {
 
 
 
+const ImagePersistence = {
+    DB_NAME: 'GitHubRepoImageCache',
+    STORE_NAME: 'images_by_sha',
+    EXPIRATION_MS: 30 * 24 * 60 * 60 * 1000, 
+    dbPromise: null,
 
+    init() {
+        if (!this.dbPromise) {
+            this.dbPromise = new Promise((resolve, reject) => {
+                const request = indexedDB.open(this.DB_NAME, 1);
+                request.onupgradeneeded = (e) => {
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains(this.STORE_NAME)) {
+                        db.createObjectStore(this.STORE_NAME, { keyPath: 'sha' });
+                    }
+                };
+                request.onsuccess = (e) => {
+                    const db = e.target.result;
+                    resolve(db);
+                    this.cleanup(db);
+                };
+                request.onerror = (e) => reject(e);
+            });
+        }
+        return this.dbPromise;
+    },
+
+    
+
+    async get(sha) {
+        if (!sha) return null;
+        try {
+            const db = await this.init();
+            return new Promise((resolve) => {
+                const tx = db.transaction(this.STORE_NAME, 'readwrite');
+                const store = tx.objectStore(this.STORE_NAME);
+                const req = store.get(sha);
+                
+                req.onsuccess = () => {
+                    const result = req.result;
+                    if (result) {
+                        resolve(result.blob);
+                        result.timestamp = Date.now();
+                        store.put(result);
+                    } else {
+                        resolve(null);
+                    }
+                };
+                req.onerror = () => resolve(null);
+            });
+        } catch (e) {
+            return null;
+        }
+    },
+
+
+
+async cleanup(db) {
+        if (!db) return;
+        try {
+            const tx = db.transaction(this.STORE_NAME, 'readwrite');
+            const store = tx.objectStore(this.STORE_NAME);
+            const req = store.openCursor();
+            const now = Date.now();
+
+            req.onsuccess = (e) => {
+                const cursor = e.target.result;
+                if (cursor) {
+                    const record = cursor.value;
+                    if (now - record.timestamp > this.EXPIRATION_MS) {
+                        cursor.delete();
+                    }
+                    cursor.continue();
+                }
+            };
+        } catch (e) {}
+    },
+
+
+    async put(sha, blob) {
+        if (!sha || !blob) return;
+        try {
+            const db = await this.init();
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction(this.STORE_NAME, 'readwrite');
+                const store = tx.objectStore(this.STORE_NAME);
+                const req = store.put({ sha, blob, timestamp: Date.now() });
+                req.onsuccess = () => resolve();
+                req.onerror = (e) => reject(e);
+            });
+        } catch (e) {}
+    }
+};
 
 
 async function disablePages(repo) {
@@ -7444,11 +7803,15 @@ async function importProxiesFromUrl() {
     importButton.disabled = true;
     if (importIcon) importIcon.classList.add('hidden');
     if (importSpinner) importSpinner.classList.remove('hidden');
-    showToast('正在通过默认节点导入...', 'info');
+    
+    // 清空现有代理（可选，如果你希望导入时覆盖旧的，取消下面这行的注释）
+    // state.proxies = []; 
+
+    showToast('正在获取云端代理列表...', 'info');
 
     try {
         const PROXY_PREFIXES = [
-            'https://gh.ptoe.cc/',
+            'https://gh.927223.xyz/',
             'https://ghproxy.net/',
             'https://ghfast.top/',
             'https://tvv.tw/'
@@ -7477,42 +7840,44 @@ async function importProxiesFromUrl() {
         }
 
         if (!success) {
-            throw new Error('所有备用节点和直连均无法获取代理列表');
+            throw new Error('无法连接到更新服务器，请检查网络');
         }
         
         const urls = responseText.split('\n').map(url => url.trim()).filter(url => url && url.length > 5);
         
         if (urls.length > 0) {
-            const newUrls = urls.filter(u => !state.proxies.some(p => p.url && p.url.replace(/\/$/, '') === u.replace(/\/$/, '')));
-            if (newUrls.length > 0) {
-                const newProxies = newUrls.map(url => ({ url, status: null, latency: null, type: null }));
-                state.proxies.push(...newProxies);
+            // 去重合并
+            let addedCount = 0;
+            urls.forEach(u => {
+                // 移除末尾斜杠进行比较
+                const cleanU = u.replace(/\/$/, '');
+                const exists = state.proxies.some(p => p.url && p.url.replace(/\/$/, '') === cleanU);
+                if (!exists) {
+                    state.proxies.push({ url: u, status: null, latency: null, type: null });
+                    addedCount++;
+                }
+            });
+
+            if (addedCount > 0) {
                 saveProxyConfig();
                 renderProxyList();
+                showToast(`成功导入 ${addedCount} 个新节点，正在测速...`);
+                
+                // 关键修改：导入后立即调用智能优选逻辑
+                // 这会自动测试所有节点并选中最快的一个
+                await findAndSetBestProxy(true); 
+            } else {
+                showToast('列表已是最新，无新节点添加');
+                // 即使没有新节点，也重新优选一次
+                await findAndSetBestProxy(true);
             }
-        }
-
-        await testAllProxies(false);
-
-        let bestLatency = Infinity;
-        let bestIndex = -1;
-        state.proxies.forEach((proxy, index) => {
-            if (proxy.status === 'ok' && proxy.latency < bestLatency) {
-                bestLatency = proxy.latency;
-                bestIndex = index;
-            }
-        });
-
-        if (bestIndex !== -1) {
-            setActiveProxy(bestIndex, false);
-            showToast(`操作完成，已切换至最低延迟节点: ${getDomainFromUrl(state.proxies[bestIndex].url)}`, 'success');
         } else {
-            showToast('所有代理均测试失败', 'error');
+            showToast('获取的代理列表为空', 'error');
         }
 
     } catch (error) {
-        showToast(`操作失败: ${error.message}`, 'error');
-        console.error("导入或测试时发生错误:", error);
+        showToast(`导入失败: ${error.message}`, 'error');
+        console.error("导入时发生错误:", error);
     } finally {
         importButton.disabled = false;
         if (importIcon) importIcon.classList.remove('hidden');
@@ -7525,80 +7890,95 @@ async function importProxiesFromUrl() {
 
 async function findAndSetBestProxy(manual = false) {
     const autoSelectButton = el.proxyAutoSelectToggle;
+    
+    // 如果是手动点击或导入触发，锁定按钮防止重复操作
     if (manual) {
         autoSelectButton.disabled = true;
-        showToast('智能优选已启动，正在分析当前中', 'info', 2000);
-        showToast('往后每次进入将会在后台自动执行智能优选代理.', 'info', 3000);
     }
 
+    // 1. 首次启动：如果没有代理，先自动导入
     if (state.proxies.length === 0) {
-        if (!manual) showToast('首次启动，自动配置代理...', 'info');
-        
+        if (!manual) showToast('首次初始化：正在获取加速节点...', 'info');
         try {
             const response = await fetch(PROXY_TEST_URL + '?t=' + Date.now(), { cache: 'no-store' });
-            if (!response.ok) throw new Error(`获取代理列表失败`);
+            if (!response.ok) throw new Error(`无法连接代理源`);
             const text = await response.text();
             const urls = text.split('\n').map(url => url.trim()).filter(url => url && url.length > 5);
+            
             if (urls.length > 0) {
-                state.proxies.push(...urls.map(url => ({ url, status: null, latency: null, type: null })));
+                state.proxies = urls.map(url => ({ url, status: null, latency: null, type: null }));
                 saveProxyConfig();
                 renderProxyList();
             } else {
-                 throw new Error("订阅链接为空");
+                 throw new Error("代理源内容为空");
             }
         } catch (error) {
-            showToast(`自动导入代理失败: ${error.message}`, 'error');
+            showToast(`初始化代理失败: ${error.message}`, 'error');
             if (manual) autoSelectButton.disabled = false;
             return;
         }
     }
     
-    const BATCH_SIZE = 3;
-    const allProxies = [...state.proxies];
-    const detailedResults = [];
+    // 2. 开始测速逻辑
+    // 将状态设为 testing 以便 UI 显示加载圈
+    state.proxies.forEach(p => p.status = 'testing');
+    renderProxyList();
 
+    // 分批并行测速（每批 10 个，防止浏览器请求过多卡死）
+    const BATCH_SIZE = 10;
+    const allProxies = state.proxies;
+    
     for (let i = 0; i < allProxies.length; i += BATCH_SIZE) {
         const batch = allProxies.slice(i, i + BATCH_SIZE);
         const batchPromises = batch.map(async (proxy) => {
-            const typeResult = await determineBestProxyTypeAndTest(proxy.url);
-            if (!typeResult.ok) {
-                return { ...proxy, testResult: { averageLatency: Infinity, jitter: Infinity, successRate: 0 } };
-            }
-            proxy.type = typeResult.type;
-            const testResult = await testProxyConnectivity(proxy, 4);
-            return { ...proxy, testResult };
+            // 使用 enhanced 测试函数，它会自动判断是 path 还是 domain 替换模式
+            const result = await testProxyEnhanced(proxy.url);
+            
+            // 更新当前代理对象状态
+            proxy.latency = result.ms;
+            proxy.status = result.ok ? 'ok' : 'fail';
+            proxy.err = result.err;
+            proxy.type = result.type;
+            
+            return proxy;
         });
-        const batchResults = await Promise.all(batchPromises);
-        detailedResults.push(...batchResults);
-    }
-
-    const usableProxies = detailedResults.filter(p => p.testResult.successRate > 0.5);
-
-    if (usableProxies.length === 0) {
-        showToast('所有代理均不可用或超时', 'error');
-    } else {
-        usableProxies.forEach(p => {
-            p.score = p.testResult.averageLatency + (p.testResult.jitter * 2);
-            if (p.testResult.successRate < 1) p.score += 500;
-        });
-
-        usableProxies.sort((a, b) => a.score - b.score);
-        const bestProxy = usableProxies[0];
-        const bestProxyIndex = state.proxies.findIndex(p => p.url === bestProxy.url);
         
-        detailedResults.forEach((result) => {
-            const originalProxyIndex = state.proxies.findIndex(p => p.url === result.url);
-            if (originalProxyIndex !== -1) {
-                state.proxies[originalProxyIndex].status = result.testResult.successRate > 0.5 ? 'ok' : 'fail';
-                state.proxies[originalProxyIndex].latency = result.testResult.averageLatency;
-                state.proxies[originalProxyIndex].type = result.type;
-            }
-        });
-
+        // 等待当前批次完成
+        await Promise.all(batchPromises);
+        // 实时刷新列表，让用户看到进度
         renderProxyList();
-        setActiveProxy(bestProxyIndex, false);
-       // showToast(`代理优选完成: ${getDomainFromUrl(bestProxy.url)} (${bestProxy.testResult.averageLatency}ms)`, 'success');
     }
+
+    // 3. 优选逻辑
+    // 筛选出所有成功的代理
+    const validProxies = state.proxies.filter(p => p.status === 'ok' && p.latency !== null);
+
+    if (validProxies.length === 0) {
+        showToast('所有代理节点测试失败，请检查网络连接', 'error');
+    } else {
+        // 按延迟排序（从小到大）
+        validProxies.sort((a, b) => a.latency - b.latency);
+        
+        // 找到最优代理在原始数组中的索引
+        const bestProxy = validProxies[0];
+        const bestIndex = state.proxies.indexOf(bestProxy);
+
+        if (bestIndex !== -1) {
+            // 只有当当前选中的不是最优，或者还没选中时，才切换
+            if (state.activeProxyIndex !== bestIndex) {
+                setActiveProxy(bestIndex, false); // false 表示不显示"已切换"的Toast，下面统一显示
+            }
+            
+            if (manual) {
+                showToast(`已优选节点: ${getDomainFromUrl(bestProxy.url)} (延迟: ${bestProxy.latency}ms)`, 'success');
+            } else {
+                console.log(`自动优选: 切换至 ${bestProxy.url}`);
+            }
+        }
+    }
+    
+    // 保存最终状态
+    saveProxyConfig();
     
     if (manual) autoSelectButton.disabled = false;
 }
@@ -7930,43 +8310,9 @@ function openContextMenuSettingsModal() {
     uiStateStack.push(hideContextMenuSettingsModal);
 }
 
-async function loadLocalAvatar() {
-    try {
-        const avatarBlob = await getAvatarFromDB('user_avatar');
-        if (avatarBlob) {
-            state.localAvatar = URL.createObjectURL(avatarBlob);
-        } else {
-            state.localAvatar = null;
-        }
-    } catch (e) {
-        state.localAvatar = null;
-    }
-}
 
-function handleAvatarChange(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    if (!file.type.startsWith('image/')) {
-        showToast('请选择一个图片文件');
-        return;
-    }
-    if (file.size > 2 * 1024 * 1024) {
-        showToast('图片文件不能超过 2MB');
-        return;
-    }
-    
-    saveAvatarToDB('user_avatar', file).then(() => {
-        if (state.localAvatar) {
-            URL.revokeObjectURL(state.localAvatar);
-        }
-        state.localAvatar = URL.createObjectURL(file);
-        updateUserUI();
-        showToast('本地头像更新成功');
-    }).catch(err => {
-        showToast('保存头像失败');
-        console.error(err);
-    });
-}
+
+
 
 
 
@@ -7982,6 +8328,221 @@ function hideMediaPreview() {
         if (index > -1) uiStateStack.splice(index, 1);
     }
 }
+
+
+
+
+
+
+/**
+ * 底部导航栏 - 水晶朦胧频谱特效
+ */
+const NavSpectrum = {
+    canvas: null,
+    ctx: null,
+    audioContext: null,
+    analyser: null,
+    source: null,
+    isActive: false,
+    mediaElement: null,
+    dataArray: null,
+
+    init(audioElement) {
+        if (this.mediaElement === audioElement) return;
+        this.mediaElement = audioElement;
+        this.canvas = document.getElementById('nav-spectrum');
+        if (!this.canvas) return;
+
+        this.ctx = this.canvas.getContext('2d');
+        
+        // 监听窗口调整
+        window.removeEventListener('resize', this.resizeHandler); // 防止重复绑定
+        this.resizeHandler = () => this.resize();
+        window.addEventListener('resize', this.resizeHandler);
+        
+        this.resize();
+        this.setupAudioContext();
+    },
+
+    setupAudioContext() {
+        if (this.analyser) return;
+
+        try {
+            const AC = window.AudioContext || window.webkitAudioContext;
+            if (!AC) return;
+            
+            this.audioContext = new AC();
+            this.analyser = this.audioContext.createAnalyser();
+            
+            // --- 核心配置：水晶质感参数 ---
+            this.analyser.fftSize = 2048; // 降低采样数，让波形更平滑，不需太多细节
+            this.analyser.smoothingTimeConstant = 0.7; // 0.7 = 非常粘稠丝滑的液体感
+
+            // 连接音频源
+            try {
+                this.source = this.audioContext.createMediaElementSource(this.mediaElement);
+                this.source.connect(this.analyser);
+                this.analyser.connect(this.audioContext.destination);
+                
+                this.dataArray = new Uint8Array(this.analyser.frequencyBinCount);
+                this.isActive = true;
+                this.render();
+            } catch (e) {
+                console.log("Audio source connected already.");
+            }
+        } catch (e) {
+            console.error("Web Audio API error", e);
+        }
+    },
+
+    resize() {
+        if (!this.canvas) return;
+        const container = document.querySelector('footer');
+        if (container) {
+            // 提高分辨率以获得细腻效果
+            const dpr = window.devicePixelRatio || 1;
+            this.canvas.width = container.clientWidth * dpr;
+            this.canvas.height = container.clientHeight * dpr;
+            this.ctx.scale(dpr, dpr);
+        }
+    },
+
+    render() {
+        if (!this.isActive) return;
+        requestAnimationFrame(() => this.render());
+
+        if (this.mediaElement.paused) {
+            // 暂停时缓慢淡出而不是直接清空，增加高级感
+            this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+            return;
+        }
+
+        if (this.audioContext.state === 'suspended') this.audioContext.resume();
+
+        const width = this.canvas.width / (window.devicePixelRatio || 1);
+        const height = this.canvas.height / (window.devicePixelRatio || 1);
+        
+        // 获取频谱数据
+        this.analyser.getByteFrequencyData(this.dataArray);
+
+        // 清空画布
+        this.ctx.clearRect(0, 0, width, height);
+
+        // --- 绘制配置 ---
+        const isDark = !document.body.classList.contains('light-theme');
+        const cx = width / 2;
+        // 取前 60% 的低中频数据，忽略高频噪音，视觉更舒适
+        const useLen = Math.floor(this.dataArray.length * 0.7); 
+        const step = (cx / useLen); 
+
+        // 创建水晶渐变色
+        const gradient = this.ctx.createLinearGradient(0, height, 0, 0);
+        if (isDark) {
+            // 暗色主题：极光青 -> 梦幻紫 -> 亮白
+            gradient.addColorStop(0, 'rgba(0, 255, 200, 0.1)');   // 底部淡青
+            gradient.addColorStop(0.5, 'rgba(100, 200, 255, 0.6)'); // 中间晶蓝
+            gradient.addColorStop(1, 'rgba(255, 255, 255, 0.9)');   // 顶部亮白边缘
+        } else {
+            // 亮色主题：深紫 -> 玫红 -> 亮白
+            gradient.addColorStop(0, 'rgba(120, 100, 255, 0.1)');
+            gradient.addColorStop(0.6, 'rgba(255, 100, 200, 0.6)');
+            gradient.addColorStop(1, 'rgba(100, 50, 255, 0.9)');
+        }
+
+        this.ctx.fillStyle = gradient;
+        
+        // 开启叠加模式，增强光感
+        this.ctx.globalCompositeOperation = isDark ? 'lighter' : 'source-over';
+
+        // --- 绘制波形函数 (对称) ---
+        this.ctx.beginPath();
+        
+        // 从左下角开始
+        this.ctx.moveTo(0, height);
+
+        // 计算波形点
+        let x = 0;
+        let points = [];
+        
+        // 收集左半边点 (镜像)
+        for (let i = useLen - 1; i >= 0; i--) {
+            // 稍微放大振幅 (v * 0.8)
+            const v = (this.dataArray[i] / 255) * height * 0.94; 
+            // 增加基础高度 (height * 0.1)，让它像水面一样浮起来一点
+            const y = height - v - (height * 0.05); 
+            points.push({x: x, y: y});
+            x += step;
+        }
+        
+        // 收集右半边点
+        for (let i = 0; i < useLen; i++) {
+            const v = (this.dataArray[i] / 255) * height * 0.94;
+            const y = height - v - (height * 0.05);
+            points.push({x: x, y: y});
+            x += step;
+        }
+
+        // 绘制贝塞尔曲线连接所有点
+        // 第一个点
+        this.ctx.lineTo(points[0].x, points[0].y);
+
+        // 中间点平滑连接
+        for (let i = 0; i < points.length - 1; i++) {
+            const p0 = points[i];
+            const p1 = points[i + 1];
+            // 取中点作为控制点
+            const mx = (p0.x + p1.x) / 2;
+            const my = (p0.y + p1.y) / 2;
+            this.ctx.quadraticCurveTo(p0.x, p0.y, mx, my);
+        }
+
+        // 最后一个点
+        this.ctx.lineTo(width, height);
+        this.ctx.closePath();
+
+        // 填充
+        this.ctx.fill();
+
+        // --- 二次高光描边 (增加晶莹剔透的感觉) ---
+        // 只有暗色模式才画这层高光，亮色模式画多了会脏
+        if (isDark) {
+            this.ctx.shadowBlur = 15; // 强发光
+            this.ctx.shadowColor = "rgba(255, 255, 255, 0.8)";
+            this.ctx.strokeStyle = "rgba(255, 255, 255, 0.4)";
+            this.ctx.lineWidth = 1;
+            this.ctx.stroke();
+            
+            // 重置阴影，避免影响下一帧性能
+            this.ctx.shadowBlur = 0;
+        }
+
+        this.ctx.globalCompositeOperation = 'source-over';
+    }
+};
+
+(function hookAudioToSpectrum() {
+    // 劫持原有的 audioManager (如果存在)
+    // 如果你是把代码整合进去，请直接修改 initMediaPreview 函数中的 audioManager.init 方法
+    
+    // 假设 audioManager 定义在 window 作用域或者闭包内
+    // 这里我们提供一个思路：当播放时初始化频谱
+    
+    const originalPlay = window.HTMLAudioElement.prototype.play;
+    window.HTMLAudioElement.prototype.play = function() {
+        // 当任意 audio 元素播放时
+        // 检查这个 audio 是否是我们用来预览文件的那个
+        // 通常预览的 audio 是 js 动态创建的，没有 id，但我们可以无差别绑定
+        
+        // 仅当音频元素有 src 时才绑定
+        if (this.src) {
+            // 初始化频谱
+            NavSpectrum.init(this);
+        }
+        return originalPlay.apply(this, arguments);
+    };
+})();
+
+
 
 function initMediaPreview() {
     const preview = document.getElementById('mediaPreview');
@@ -8000,6 +8561,7 @@ function initMediaPreview() {
                 this.audio.crossOrigin = 'anonymous';
                 this.audio.addEventListener('play', () => { this.isPlaying = true; });
                 this.audio.addEventListener('pause', () => { this.isPlaying = false; });
+                
                 this.audio.addEventListener('ended', () => { this.isPlaying = false; showToast(`播放完成: ${this.currentName}`); });
                 this.audio.addEventListener('error', (e) => { this.isPlaying = false; showToast('播放出错'); console.error('Audio error:', e); });
                 document.addEventListener('visibilitychange', () => {
@@ -8052,16 +8614,33 @@ function initMediaPreview() {
             e.stopPropagation();
             return;
         }
+        
         const openPreview = () => {
             preview.classList.remove('hidden');
             uiStateStack.push(hideMediaPreview);
             e.preventDefault();
             e.stopPropagation();
         };
+
+        // --- 修改开始：图片预览逻辑优化 ---
         if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'ico', 'bmp', 'svg'].includes(ext)) {
-            img.src = url;
+            // 1. 尝试获取缩略图元素
+            const thumbImg = item.querySelector('.file-thumbnail');
+            
+            // 2. 如果缩略图存在且有 src (通常是 blob:...), 直接复用，实现秒开
+            if (thumbImg && thumbImg.src && thumbImg.src.startsWith('blob:')) {
+                img.src = thumbImg.src;
+            } else {
+                // 3. 只有当没有缩略图缓存时，才使用网络 URL
+                img.src = url; 
+            }
+
             img.style.display = '';
             video.style.display = 'none';
+            
+            // 4. 重置样式，防止上一张图片的缩放状态影响这一张
+            img.style.transform = ''; 
+            
             openPreview();
             return;
         }
@@ -8075,6 +8654,16 @@ function initMediaPreview() {
         }
     }, true);
 }
+
+
+
+
+
+
+
+             
+             
+             
 
 function hideCreateRepoModal() {
     el.createRepoModal.classList.add('hidden');
@@ -8818,74 +9407,94 @@ async function showPublishManagerModal() {
     el.publishManagerModal.classList.remove('hidden');
     uiStateStack.push(hidePublishManagerModal);
 
-    const hasCachedRepos = state.repos && state.repos.length > 0;
+    el.publishManageList.innerHTML = '<div class="loading-spinner"><i class="fa fa-spinner fa-spin"></i></div>';
 
-    if (hasCachedRepos) {
-        renderPublishManagerLists();
-        prefetchCustomDomains(); 
-    } else {
-        el.publishManageList.innerHTML = '<div class="loading-spinner"><i class="fa fa-spinner fa-spin"></i></div>';
-    }
+    const CACHE_KEY = 'custom_domains_cache';
+    try {
+        const cachedDomains = (await SimpleDB.get(CACHE_KEY)) || {};
+        state.repos.forEach(repo => {
+            if (repo.has_pages && cachedDomains[repo.full_name] !== undefined) {
+                repo.customDomain = cachedDomains[repo.full_name];
+            }
+        });
+    } catch (e) {}
 
-    const silentUpdate = async () => {
-        try {
-            await fetchRepos(true, false);
-            const cachedDomains = JSON.parse(localStorage.getItem('custom_domains_cache') || '{}');
-            state.repos.forEach(repo => {
-                if (repo.has_pages && cachedDomains[repo.full_name]) {
-                    repo.customDomain = cachedDomains[repo.full_name];
-                }
-            });
-            renderPublishManagerLists();
-            if (!hasCachedRepos) {
-                prefetchCustomDomains();
-            }
-        } catch (error) {
-            if (!hasCachedRepos) {
-                el.publishManageList.innerHTML = '<p class="publish-list-empty">加载仓库列表失败</p>';
-            }
-            showToast('后台更新仓库列表失败', 'error');
-        }
-    };
-    
-    silentUpdate();
+    renderPublishManagerLists();
 }
 
-function prefetchCustomDomains() {
-    const cachedDomains = JSON.parse(localStorage.getItem('custom_domains_cache') || '{}');
-    const reposToFetch = state.repos.filter(r => r.has_pages && r.customDomain === undefined);
+
+
+
+async function smartPreloadCNAMEs() {
+    const pagesRepos = state.repos.filter(r => r.has_pages);
+    if (pagesRepos.length === 0) return;
+
+    const CACHE_KEY = 'custom_domains_cache';
+    let cachedDomains = (await SimpleDB.get(CACHE_KEY)) || {};
+    
+    let hasChanges = false;
+    pagesRepos.forEach(repo => {
+        if (cachedDomains[repo.full_name] !== undefined) {
+            repo.customDomain = cachedDomains[repo.full_name];
+        }
+    });
+
+    const reposToFetch = pagesRepos.filter(repo => repo.customDomain === undefined);
 
     if (reposToFetch.length === 0) {
         return;
     }
 
-    const fetchPromises = reposToFetch.map(repo => (async () => {
-        try {
-            const url = `https://api.github.com/repos/${repo.full_name}/contents/CNAME?t=${Date.now()}`;
-            const response = await fetch(url, { headers: { 'Authorization': `token ${state.token}` } });
+    const runFetch = async () => {
+        const BATCH_SIZE = 3;
+        
+        for (let i = 0; i < reposToFetch.length; i += BATCH_SIZE) {
+            const batch = reposToFetch.slice(i, i + BATCH_SIZE);
             
-            let domain = null;
-            if (response.ok) {
-                const data = await response.json();
-                domain = atob(data.content).trim();
-            }
-            
-            repo.customDomain = domain;
-            cachedDomains[repo.full_name] = domain;
+            await Promise.all(batch.map(async (repo) => {
+                try {
+                    const url = `https://api.github.com/repos/${repo.full_name}/contents/CNAME?t=${Date.now()}`;
+                    const res = await fetch(url, { 
+                        headers: { 'Authorization': `token ${state.token}` },
+                        cache: 'no-store' 
+                    });
 
-        } catch (error) {
-            repo.customDomain = null;
-            cachedDomains[repo.full_name] = null;
+                    if (res.ok) {
+                        const data = await res.json();
+                        const domain = atob(data.content).trim();
+                        repo.customDomain = domain;
+                        cachedDomains[repo.full_name] = domain;
+                    } else {
+                        repo.customDomain = null;
+                        cachedDomains[repo.full_name] = null; 
+                    }
+                    hasChanges = true;
+                } catch (e) {
+                    console.warn(e);
+                }
+            }));
+            
+            await new Promise(r => setTimeout(r, 500));
         }
-    })());
-    
-    Promise.all(fetchPromises).then(() => {
-        localStorage.setItem('custom_domains_cache', JSON.stringify(cachedDomains));
-        if (!el.publishManagerModal.classList.contains('hidden')) {
-            renderPublishManagerLists();
+
+        if (hasChanges) {
+            await SimpleDB.set(CACHE_KEY, cachedDomains);
+            if (!document.getElementById('publishManagerModal').classList.contains('hidden')) {
+                renderPublishManagerLists();
+            }
         }
-    });
+    };
+
+    if ('requestIdleCallback' in window) {
+        requestIdleCallback(runFetch);
+    } else {
+        setTimeout(runFetch, 2000);
+    }
 }
+
+
+
+
 function hidePublishManagerModal() {
     el.publishManagerModal.classList.add('hidden');
     const index = uiStateStack.indexOf(hidePublishManagerModal);
@@ -9799,51 +10408,40 @@ function estimateLocalStorageUsage() {
 }
 
 async function autoClearCacheIfNeeded() {
-    const USAGE_THRESHOLD = 5 * 1024 * 1024; // 4MB
-    
-    if (estimateLocalStorageUsage() < USAGE_THRESHOLD) {
-        return;
+    // 只有在数据量极大时才清理，这里简化为只清理过期的编辑缓存
+    // IndexedDB 存储空间通常很大，不需要像 LocalStorage 那样激进清理
+    try {
+        const keys = await SimpleDB.keys();
+        const now = Date.now();
+        const EXPIRE_TIME = 3 * 24 * 60 * 60 * 1000; // 3天
+
+        for (const key of keys) {
+            // 清理编辑缓存
+            if (key.startsWith('edit_cache_')) {
+                const data = await SimpleDB.get(key);
+                if (data && (now - data.timestamp > EXPIRE_TIME)) {
+                    await SimpleDB.del(key);
+                }
+            }
+            // 清理过期的仓库列表缓存 (如果数据结构异常或过期)
+            else if (key === 'repos_cache_time') {
+                 const time = await SimpleDB.get(key);
+                 if (time && (now - parseInt(time) > 7 * 24 * 60 * 60 * 1000)) { // 7天强制清理一次列表
+                     await SimpleDB.del('cached_repos');
+                     await SimpleDB.del('repos_cache_time');
+                 }
+            }
+        }
+    } catch (e) {
+        console.warn('自动清理缓存时出错:', e);
     }
-
-   // showToast('存储空间紧张，正在后台清理缓存...', 'info', 2000);
-
-    let keysToRemove = [];
+    
+    // 同时尝试清理 localStorage 中的旧垃圾数据，释放空间
     for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
-        if (key.startsWith('edit_cache_')) {
-            keysToRemove.push(key);
+        if (key && (key.startsWith('edit_cache_') || key === 'cached_repos' || key === 'cached_starred_repos')) {
+            localStorage.removeItem(key);
         }
-    }
-    keysToRemove.forEach(key => localStorage.removeItem(key));
-
-    if (estimateLocalStorageUsage() < USAGE_THRESHOLD) return;
-
-    localStorage.removeItem('cached_repos');
-    localStorage.removeItem('repos_cache_time');
-    localStorage.removeItem('cached_starred_repos');
-    localStorage.removeItem('starred_repos_cache_time');
-
-    if (estimateLocalStorageUsage() < USAGE_THRESHOLD) return;
-
-    try {
-        const db = await initDB();
-        await new Promise((resolve, reject) => {
-            const transaction = db.transaction(['avatars'], 'readwrite');
-            const store = transaction.objectStore('avatars');
-            const getAllKeysRequest = store.getAllKeys();
-            transaction.oncomplete = () => resolve();
-            transaction.onerror = (event) => reject(event.target.error);
-            getAllKeysRequest.onsuccess = () => {
-                const keys = getAllKeysRequest.result;
-                keys.forEach(key => {
-                    if (key !== 'user_avatar') {
-                        store.delete(key);
-                    }
-                });
-            };
-        });
-    } catch (e) {
-        console.error("自动清理头像缓存失败:", e);
     }
 }
 
@@ -9886,10 +10484,7 @@ async function getAvatarFromDB(key, ownerLogin) {
         request.onerror = (event) => reject('数据读取失败: ' + event.target.error);
         request.onsuccess = () => {
             if (request.result) {
-                const isOwnAvatar = state.user && ownerLogin === state.user.login;
-                const CACHE_DURATION_OWN = 48 * 60 * 60 * 1000;
-                const CACHE_DURATION_OTHER = 5 * 60 * 1000;
-                const CACHE_DURATION = isOwnAvatar ? CACHE_DURATION_OWN : CACHE_DURATION_OTHER;
+                const CACHE_DURATION = 48 * 60 * 60 * 1000;
 
                 if (Date.now() - request.result.timestamp < CACHE_DURATION) {
                     resolve(request.result.value);
@@ -9904,6 +10499,344 @@ async function getAvatarFromDB(key, ownerLogin) {
     });
 }
 
+
+async function showRepoOverview(repoInput) {
+    let repo = repoInput;
+    const CACHE_KEY = `overview_cache_${repo.full_name}`;
+    const CACHE_DURATION = 3 * 60 * 1000;
+
+    const modal = document.getElementById('repoOverviewModal');
+    const avatar = document.getElementById('overviewAvatar');
+    const nameEl = document.getElementById('overviewName');
+    const descEl = document.getElementById('overviewDesc');
+    const langEl = document.getElementById('overviewLang');
+    const sizeEl = document.getElementById('overviewSize');
+    const dateEl = document.getElementById('overviewDates');
+    const readmeEl = document.getElementById('overviewReadme');
+    const enterBtn = document.getElementById('overviewEnterBtn');
+    
+    let currentDocDir = ''; 
+
+    const resolvePath = (baseDir, relativePath) => {
+        let path = relativePath.split('#')[0].split('?')[0];
+        try { path = decodeURIComponent(path); } catch(e) {}
+        if (path.startsWith('/')) return path.substring(1); 
+        const stack = baseDir ? baseDir.split('/').filter(p => p) : [];
+        const parts = path.split('/');
+        for (const part of parts) {
+            if (part === '' || part === '.') continue;
+            if (part === '..') { if (stack.length > 0) stack.pop(); } 
+            else { stack.push(part); }
+        }
+        return stack.join('/');
+    };
+
+    readmeEl.onclick = async (e) => {
+        const link = e.target.closest('a');
+        if (!link) return;
+        const rawHref = link.getAttribute('href');
+        if (!rawHref) return;
+
+        if (rawHref.startsWith('#')) {
+            e.preventDefault();
+            const targetId = rawHref.substring(1);
+            let targetEl = document.getElementById(targetId) || document.getElementById(decodeURIComponent(targetId));
+            if (!targetEl) targetEl = readmeEl.querySelector(`[name="${targetId}"]`) || readmeEl.querySelector(`[id^="user-content-${targetId}"]`);
+            if (targetEl) targetEl.scrollIntoView({ behavior: 'smooth' });
+            return;
+        }
+
+        let targetPath = null;
+        let targetRepoFullName = repo.full_name;
+        let targetBranch = repo.default_branch || 'main';
+        const isUrl = rawHref.match(/^[a-zA-Z]+:\/\//) || rawHref.startsWith('//');
+
+        if (isUrl) {
+            const githubMatch = rawHref.match(/^https?:\/\/(?:www\.)?github\.com\/([^\/]+)\/([^\/]+)\/blob\/([^\/]+)\/(.+)$/);
+            if (githubMatch) {
+                e.preventDefault();
+                targetRepoFullName = `${githubMatch[1]}/${githubMatch[2]}`;
+                targetBranch = githubMatch[3];
+                targetPath = githubMatch[4];
+            } else {
+                return;
+            }
+        } else {
+            e.preventDefault();
+            targetPath = resolvePath(currentDocDir, rawHref);
+        }
+
+        if (targetPath) {
+            readmeEl.style.opacity = '0.6';
+            try {
+                const encodedPath = targetPath.split('/').map(encodeURIComponent).join('/');
+                const rawUrl = `https://raw.githubusercontent.com/${targetRepoFullName}/${targetBranch}/${encodedPath}`;
+                const fetchUrl = getProxiedUrl(rawUrl);
+                const res = await fetch(fetchUrl);
+
+                if (res.ok) {
+                    const content = await res.text();
+                    if (typeof marked !== 'undefined') {
+                        readmeEl.innerHTML = marked.parse(content);
+                    } else {
+                        readmeEl.innerHTML = content.replace(/\n/g, '<br>');
+                    }
+                    const lastSlash = targetPath.lastIndexOf('/');
+                    if (lastSlash !== -1) {
+                        currentDocDir = targetPath.substring(0, lastSlash);
+                    } else {
+                        currentDocDir = '';
+                    }
+                    
+                    if (targetRepoFullName !== repo.full_name) {
+                        repo = { full_name: targetRepoFullName, default_branch: targetBranch, owner: { login: targetRepoFullName.split('/')[0] } };
+                    } else {
+                        repo.default_branch = targetBranch;
+                    }
+                    readmeEl.scrollTop = 0;
+                } else {
+                    if (res.status === 404) showToast('无法加载：文件不存在或为文件夹', 'error');
+                    else throw new Error(`HTTP ${res.status}`);
+                }
+            } catch (err) {
+                console.error(err);
+                showToast(`加载失败: ${err.message}`, 'error');
+            } finally {
+                readmeEl.style.opacity = '1';
+            }
+        }
+    };
+
+    const renderRepoUI = (data, readmeContent = null) => {
+        avatar.src = data.owner.avatar_url;
+        nameEl.innerHTML = `<span style="opacity:0.7; font-weight:400; font-size:0.9em">${data.owner.login} /</span><br>${data.name}`;
+        descEl.textContent = data.description || '暂无描述';
+        langEl.textContent = data.language || 'Unknown';
+        sizeEl.textContent = formatSize(data.size * 1024);
+        
+        const updatedTime = data.updated_at ? new Date(data.updated_at) : new Date();
+        const createdTime = data.created_at ? new Date(data.created_at) : new Date();
+        dateEl.innerHTML = `最近更新：${formatRelativeTime(updatedTime)} · 创建于：${createdTime.getFullYear()}`;
+
+        document.getElementById('statIssues').textContent = formatNumber(data.open_issues_count || 0);
+        document.getElementById('statStars').textContent = formatNumber(data.stargazers_count || 0);
+        document.getElementById('statForks').textContent = formatNumber(data.forks_count || 0);
+        const watchers = data.subscribers_count !== undefined ? data.subscribers_count : data.watchers_count;
+        document.getElementById('statWatchers').textContent = formatNumber(watchers || 0);
+
+        if (readmeContent) {
+            readmeEl.innerHTML = readmeContent;
+        } else {
+            readmeEl.innerHTML = '<div class="loading-spinner small" style="display:flex; justify-content:flex-start; align-items:center; height:auto; min-height:0; padding:2px 0;"><div class="spinner-small"></div><span style="margin-left:8px; font-size:0.75rem;">正在获取 README...</span></div>';
+        }
+    };
+
+    let cachedData = null;
+    try {
+        const parsed = await SimpleDB.get(CACHE_KEY);
+        if (parsed && (Date.now() - parsed.timestamp < CACHE_DURATION)) {
+            cachedData = parsed;
+        }
+    } catch (e) {}
+
+    modal.classList.remove('hidden');
+    uiStateStack.push(hideRepoOverview);
+
+    currentDocDir = '';
+
+    if (cachedData) {
+        repo = cachedData.repo;
+        renderRepoUI(cachedData.repo, cachedData.readme);
+    } else {
+        renderRepoUI(repo); 
+        (async () => {
+            try {
+                const resRepo = await fetch(`https://api.github.com/repos/${repo.full_name}`, {
+                    headers: { 'Authorization': `token ${state.token}` },
+                    cache: 'no-store' 
+                });
+                
+                let freshRepo = repo;
+                if (resRepo.ok) {
+                    freshRepo = await resRepo.json();
+                    repo = freshRepo;
+                    const index = state.repos.findIndex(r => r.id === freshRepo.id);
+                    if (index > -1) state.repos[index] = freshRepo;
+                    const starIndex = state.starredRepos.findIndex(r => r.id === freshRepo.id);
+                    if (starIndex > -1) state.starredRepos[starIndex] = freshRepo;
+                }
+
+                let readmeHtml = '';
+                try {
+                    const resMeta = await fetch(`https://api.github.com/repos/${freshRepo.full_name}/readme`, {
+                        headers: { 'Authorization': `token ${state.token}` }
+                    });
+                    
+                    if (resMeta.ok) {
+                        const meta = await resMeta.json();
+                        const lastSlash = meta.path.lastIndexOf('/');
+                        if (lastSlash !== -1) currentDocDir = meta.path.substring(0, lastSlash);
+
+                        try {
+                            const rawReadmeUrl = getProxiedUrl(meta.download_url);
+                            const contentRes = await fetch(rawReadmeUrl);
+                            if (contentRes.ok) {
+                                const rawMarkdown = await contentRes.text();
+                                if (typeof marked !== 'undefined') readmeHtml = marked.parse(rawMarkdown);
+                                else readmeHtml = rawMarkdown.replace(/\n/g, '<br>');
+                            } else throw new Error('Proxy fetch failed');
+                        } catch (proxyError) {
+                            const rawRes = await fetch(meta.url, {
+                                headers: { 'Authorization': `token ${state.token}`, 'Accept': 'application/vnd.github.v3.raw' }
+                            });
+                            if (rawRes.ok) {
+                                const rawMarkdown = await rawRes.text();
+                                if (typeof marked !== 'undefined') readmeHtml = marked.parse(rawMarkdown);
+                                else readmeHtml = rawMarkdown.replace(/\n/g, '<br>');
+                            }
+                        }
+                    } else {
+                        readmeHtml = '<div style="padding:10px; color:#aaa; font-size:0.8rem;">该仓库没有 README 文件。</div>';
+                    }
+                } catch (e) {
+                    readmeHtml = '<div style="padding:10px; color:#ef4444; font-size:0.8rem;">加载 README 失败，请检查网络。</div>';
+                }
+
+                renderRepoUI(freshRepo, readmeHtml);
+
+                if (readmeHtml && !readmeHtml.includes('加载 README 失败')) {
+                    try {
+                        const cachePayload = { repo: freshRepo, readme: readmeHtml, timestamp: Date.now() };
+                        await SimpleDB.set(CACHE_KEY, cachePayload);
+                    } catch (e) {}
+                }
+            } catch (e) {
+                readmeEl.innerHTML = '<div style="padding:10px; color:#ef4444; font-size:0.8rem;">无法获取仓库信息。</div>';
+            }
+        })();
+    }
+
+    const directToggle = document.getElementById('overviewDirectEntryToggle');
+    const isDirectEntry = localStorage.getItem('repo_direct_entry') === 'true';
+    directToggle.checked = isDirectEntry;
+
+    const directToggleNew = directToggle.cloneNode(true);
+    directToggle.parentNode.replaceChild(directToggleNew, directToggle);
+
+    directToggleNew.addEventListener('change', (e) => {
+        const enabled = e.target.checked;
+        localStorage.setItem('repo_direct_entry', enabled);
+        showToast(enabled ? '已开启：点击列表将直接进入文件' : '已关闭：点击列表将显示此面板');
+    });
+
+    const toggleLabel = directToggleNew.parentElement; 
+    let refreshBtn = document.getElementById('overviewRefreshBtn');
+    
+    if (!refreshBtn) {
+        refreshBtn = document.createElement('button');
+        refreshBtn.id = 'overviewRefreshBtn';
+        refreshBtn.className = 'btn-icon-sm';
+        refreshBtn.style.marginRight = '8px'; 
+        refreshBtn.innerHTML = '<i class="fa fa-refresh"></i>';
+        refreshBtn.title = '刷新内容';
+        toggleLabel.parentElement.insertBefore(refreshBtn, toggleLabel);
+    }
+
+    refreshBtn.onclick = async (e) => {
+        e.stopPropagation();
+        const icon = refreshBtn.querySelector('i');
+        icon.classList.add('fa-spin'); 
+        
+        try {
+            await SimpleDB.del(CACHE_KEY);
+            await showRepoOverview(repo);
+            showToast('刷新成功');
+        } catch(err) {
+            showToast('刷新失败', 'error');
+        } finally {
+            setTimeout(() => icon.classList.remove('fa-spin'), 500);
+        }
+    };
+
+    const starBtnOld = document.getElementById('overviewStarBtn');
+    const starBtn = starBtnOld.cloneNode(true);
+    starBtnOld.parentNode.replaceChild(starBtn, starBtnOld);
+
+    const isOwner = state.user && repo.owner.login === state.user.login;
+
+    if (isOwner) {
+        starBtn.innerHTML = '<i class="fa fa-pencil"></i> 修改信息';
+        starBtn.className = 'btn btn-secondary';
+        starBtn.onclick = () => {
+            hideRepoOverview();
+            showRenameRepoModal(repo);
+        };
+        directToggleNew.closest('label').style.visibility = 'hidden';
+        if(refreshBtn) refreshBtn.style.visibility = 'hidden'; 
+    } else {
+        directToggleNew.closest('label').style.visibility = 'visible';
+        if(refreshBtn) refreshBtn.style.visibility = 'visible';
+
+        const updateBtnStyle = () => {
+            const isCurrentlyStarred = state.starredRepos.some(r => r.full_name === repo.full_name);
+            updateOverviewStarBtn(starBtn, isCurrentlyStarred);
+            return isCurrentlyStarred;
+        };
+
+        updateBtnStyle();
+        
+        starBtn.onclick = async () => {
+            starBtn.disabled = true;
+            try {
+                const isCurrentlyStarred = updateBtnStyle();
+                if (isCurrentlyStarred) {
+                    await unstarRepository(repo.full_name);
+                    state.starredRepos = state.starredRepos.filter(r => r.full_name !== repo.full_name);
+                    showToast('已取消关注');
+                } else {
+                    await starRepository(repo.full_name);
+                    state.starredRepos.unshift(repo);
+                    showToast('已关注仓库');
+                }
+                updateBtnStyle();
+                renderRepoList();
+            } catch (e) {
+                showToast('操作失败: ' + e.message, 'error');
+            } finally {
+                starBtn.disabled = false;
+            }
+        };
+    }
+
+    const enterBtnNew = enterBtn.cloneNode(true);
+    enterBtn.parentNode.replaceChild(enterBtnNew, enterBtn);
+    
+    enterBtnNew.onclick = () => {
+        hideRepoOverview();
+        state.repoListScrollPosition = el.main.scrollTop;
+        state.shouldAnimateList = true;
+        state.viewingOwner = repo.owner.login;
+        const targetBranch = repo.default_branch || localStorage.getItem(`last_branch_${repo.full_name}`) || 'main';
+        navigateToRepo(repo, targetBranch);
+    };
+}
+// 辅助：关闭概览
+function hideRepoOverview() {
+    document.getElementById('repoOverviewModal').classList.add('hidden');
+    const index = uiStateStack.indexOf(hideRepoOverview);
+    if (index > -1) uiStateStack.splice(index, 1);
+}
+
+// 辅助：更新关注按钮样式
+function updateOverviewStarBtn(btn, isStarred) {
+    if (isStarred) {
+        btn.innerHTML = '<i class="fa-solid fa-star" style="color:#facc15"></i> 已关注';
+        btn.classList.add('active'); // 你可以在 CSS 定义 .active 样式
+    } else {
+        btn.innerHTML = '<i class="fa-regular fa-star"></i> 关注';
+        btn.classList.remove('active');
+    }
+}
 
 
 
@@ -10168,9 +11101,12 @@ async function handleSaveCustomDomain() {
         const repoToUpdate = state.repos.find(r => r.full_name === state.configuringDomainRepoFullName);
         if (repoToUpdate) {
             repoToUpdate.customDomain = domain;
-            const cachedDomains = JSON.parse(localStorage.getItem('custom_domains_cache') || '{}');
-            cachedDomains[repoToUpdate.full_name] = domain;
-            localStorage.setItem('custom_domains_cache', JSON.stringify(cachedDomains));
+            try {
+                const CACHE_KEY = 'custom_domains_cache';
+                let cachedDomains = (await SimpleDB.get(CACHE_KEY)) || {};
+                cachedDomains[repoToUpdate.full_name] = domain;
+                await SimpleDB.set(CACHE_KEY, cachedDomains);
+            } catch (e) {}
         }
 
         showToast(`仓库 ${repoName} 的域名已配置为 ${domain}`);
@@ -10217,9 +11153,12 @@ async function handleRemoveCustomDomain(repo) {
             if (checkRes.status === 404) {
                 showToast('域名配置已不存在', 'info');
                 repo.customDomain = null;
-                const cachedDomains = JSON.parse(localStorage.getItem('custom_domains_cache') || '{}');
-                delete cachedDomains[repo.full_name];
-                localStorage.setItem('custom_domains_cache', JSON.stringify(cachedDomains));
+                try {
+                    const CACHE_KEY = 'custom_domains_cache';
+                    let cachedDomains = (await SimpleDB.get(CACHE_KEY)) || {};
+                    delete cachedDomains[repo.full_name];
+                    await SimpleDB.set(CACHE_KEY, cachedDomains);
+                } catch (e) {}
                 renderPublishManagerLists();
                 return;
             }
@@ -10245,9 +11184,12 @@ async function handleRemoveCustomDomain(repo) {
         }
 
         repo.customDomain = null;
-        const cachedDomains = JSON.parse(localStorage.getItem('custom_domains_cache') || '{}');
-        delete cachedDomains[repo.full_name];
-        localStorage.setItem('custom_domains_cache', JSON.stringify(cachedDomains));
+        try {
+            const CACHE_KEY = 'custom_domains_cache';
+            let cachedDomains = (await SimpleDB.get(CACHE_KEY)) || {};
+            delete cachedDomains[repo.full_name];
+            await SimpleDB.set(CACHE_KEY, cachedDomains);
+        } catch (e) {}
         
         showToast(`仓库 "${repo.name}" 的自定义域名已成功取消绑定`);
         renderPublishManagerLists();
@@ -10257,7 +11199,6 @@ async function handleRemoveCustomDomain(repo) {
         console.error(error);
     }
 }
-
 
 
 
@@ -10739,22 +11680,47 @@ el.menuBatchPublishSites.onclick = () => {
     fetchAndDisplayReleases(repoFullName);
 });
     
-    el.repoList.addEventListener('click', (e) => {
-    const forkButton = e.target.closest('.fork-text-btn');
-    if (!forkButton) return;
+   el.repoList.addEventListener('click', (e) => {
+        const releasesButton = e.target.closest('.js-view-releases-btn');
+        if (releasesButton) return; 
+        const forkButton = e.target.closest('.fork-text-btn');
+        if (forkButton) return; 
+        const starButton = e.target.closest('.star-text-btn');
+        if (starButton) return;
 
-    e.preventDefault();
-    e.stopPropagation();
+        if (state.currentView === 'releases_list' || state.currentView === 'assets_list') return;
 
-    const repoFullName = forkButton.dataset.repoFullname;
-    const repoToFork = state.currentRepoList.find(r => r.full_name === repoFullName);
-    
-    if (repoToFork) {
-        showForkRepoModal(repoToFork);
-    } else {
-        showToast('无法找到仓库数据，请稍后再试。', 'error');
-    }
-});
+        const item = e.target.closest('.file-item');
+        if (item) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const repoId = item.dataset.repoId;
+            let repo = state.currentRepoList.find(r => String(r.id) === repoId);
+            if (!repo) {
+                repo = state.repos.find(r => String(r.id) === repoId) || 
+                       state.starredRepos.find(r => String(r.id) === repoId);
+            }
+
+            if (repo) {
+                const isOwner = state.user && repo.owner.login === state.user.login;
+                
+                const isDirectEntryEnabled = localStorage.getItem('repo_direct_entry') === 'true';
+
+                if (isOwner || isDirectEntryEnabled) {
+                    state.repoListScrollPosition = el.main.scrollTop;
+                    state.shouldAnimateList = true;
+                    state.viewingOwner = repo.owner.login;
+                    const lastBranch = localStorage.getItem(`last_branch_${repo.full_name}`);
+                    navigateToRepo(repo, lastBranch || repo.default_branch);
+                } else {
+                    showRepoOverview(repo);
+                }
+            } else {
+                showToast('无法读取仓库信息', 'error');
+            }
+        }
+    });
 
     el.contextMenuSettingsContent.addEventListener('change', e => {
         if (e.target.matches('input[type="checkbox"]')) {
@@ -10931,6 +11897,42 @@ globalSearchInput.addEventListener('keydown', (e) => {
             if (e.target === el.releaseManagerModal) hideReleaseManagerModal();
         };
     }
+
+
+    const tokenGuideHeader = document.querySelector('.token-instructions h4.lp');
+    if (tokenGuideHeader) {
+        tokenGuideHeader.addEventListener('click', function() {
+            this.classList.toggle('active');
+            
+            const content = this.nextElementSibling;
+            if (content) {
+                content.classList.toggle('active');
+            }
+        });
+    }
+
+
+
+// 绑定概览模态框的关闭事件
+    document.getElementById('closeOverviewBtn').onclick = hideRepoOverview;
+    document.getElementById('repoOverviewModal').onclick = (e) => {
+        if (e.target === document.getElementById('repoOverviewModal')) {
+            hideRepoOverview();
+        }
+    };
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -11164,9 +12166,86 @@ function initImageObserver() {
 }
 
 
+
+// --- 新增：后台静默预加载队列 ---
+async function startBackgroundPreloading() {
+    // 如果没有仓库列表或没有 Token，直接退出
+    if (!state.myRepos || state.myRepos.length === 0 || !state.token) return;
+
+    // 防止重复运行
+    if (window.isPreloadingActive) return;
+    window.isPreloadingActive = true;
+
+    console.log('🚀 开始后台预加载所有仓库...');
+    
+    // 复制一份仓库列表进行遍历
+    const queue = [...state.myRepos];
+    
+    // 逐个处理，避免并发导致 403
+    for (const repo of queue) {
+        // 如果用户正在进行下拉刷新等操作，暂停预加载
+        if (state.isRefreshing) {
+            await new Promise(r => setTimeout(r, 3000));
+        }
+
+        const branch = repo.default_branch || 'main';
+        // 统一的缓存 Key 格式
+        const cacheKey = `full_tree_cache:${repo.full_name}:${branch}`;
+
+        try {
+            // 1. 检查缓存是否存在且未过期 (有效期 24小时)
+            const cached = await SimpleDB.get(cacheKey);
+            if (cached && (Date.now() - cached.timestamp < 24 * 60 * 60 * 1000)) {
+                // console.log(`[跳过] ${repo.full_name} 已有缓存`);
+                continue; 
+            }
+
+            // 2. 发起获取全量文件树的请求
+            const url = `https://api.github.com/repos/${repo.full_name}/git/trees/${branch}?recursive=1`;
+            const res = await fetch(url, {
+                headers: { 
+                    Authorization: `token ${state.token}`,
+                    'User-Agent': 'Mozilla/5.0'
+                }
+            });
+
+            // 处理速率限制 (403 或 429)
+            if (res.status === 403 || res.status === 429) {
+                console.warn('⚠️ API 速率限制，暂停预加载 60秒...');
+                await new Promise(r => setTimeout(r, 60000));
+                // 回退一步，重试当前仓库（或者跳过）
+                continue;
+            }
+
+            if (res.ok) {
+                const data = await res.json();
+                // 只有未被截断的数据才值得缓存
+                if (!data.truncated) {
+                    await SimpleDB.set(cacheKey, {
+                        tree: data.tree,
+                        timestamp: Date.now()
+                    });
+                    console.log(`✅ [预加载完成] ${repo.full_name}`);
+                }
+            }
+
+            // 3. 礼貌性延迟：每请求一个仓库，休息 1.5 秒，防止阻塞主线程
+            await new Promise(r => setTimeout(r, 1500));
+
+        } catch (e) {
+            console.warn(`❌ [预加载失败] ${repo.full_name}`, e);
+        }
+    }
+
+    window.isPreloadingActive = false;
+    console.log('🎉 所有仓库后台预加载完成');
+}
+
+
 async function init() {
-if (!state.loadedImageMap) state.loadedImageMap = new Map();
-await autoClearCacheIfNeeded();
+    if (!state.loadedImageMap) state.loadedImageMap = new Map();
+    
+    // 1. 基础配置初始化 (极快)
     try {
         const lastVersion = localStorage.getItem('last_app_version');
         if (lastVersion !== CURRENT_VERSION) {
@@ -11182,53 +12261,61 @@ await autoClearCacheIfNeeded();
             localStorage.setItem('last_app_version', CURRENT_VERSION);
         }
     } catch (e) {
-        console.error('处理版本更新检查时出错:', e);
+        console.error(e);
     }
 
     themeManager.init();
-    loadLocalAvatar();
     loadSearchHistory();
     loadContextMenuSettings();
+    setupEventListeners(); // 绑定事件
     initImageObserver();
-    setupEventListeners();
     updateSortDropdownUI();
+    initializeActiveToken(); // 读取 Token
 
-    initializeActiveToken();
 
     if (state.token) {
         showApp();
-        try {
-            // 核心修改1：先等待用户信息加载完成，确保头像URL可用
-            await fetchUserInfo();
+        loadLocalAvatar().then(updateUserUI);
+        el.repoList.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
 
-            // 核心修改2：不再强制刷新(移除true)，从而启用缓存
-            await Promise.all([
-                fetchRepos(),
-                fetchStarredRepos(false, false)
-            ]);
-            
+        Promise.allSettled([
+            fetchUserInfo(),
+            fetchRepos(false, true),
+            fetchStarredRepos(false, false),
+            smartPreloadCNAMEs(),
+            autoClearCacheIfNeeded()
+        ]).then(() => {
             state.myRepos = [...state.repos];
-            prefetchCustomDomains();
+            
+            // 延迟执行次要任务，不阻塞首屏
+            setTimeout(() => {
+                // 1. 代理优选
+                if (state.proxies.length === 0 || state.autoSelectProxy) {
+                    findAndSetBestProxy(); 
+                } else {
+                    state.activeProxyIndex = parseInt(localStorage.getItem('active_proxy_index') || '0');
+                    state.proxyGlobalEnable = JSON.parse(localStorage.getItem('proxy_global_enable') || 'true');
+                    saveProxyConfig();
+                }
+                
+                // 2. 检查更新
+                checkServerInfo();
 
-            if (state.proxies.length === 0) {
-                findAndSetBestProxy();
-            } else if (state.autoSelectProxy) {
-                setTimeout(() => findAndSetBestProxy(), 1000);
-            } else {
-                state.activeProxyIndex = parseInt(localStorage.getItem('active_proxy_index') || '0');
-                state.proxyGlobalEnable = JSON.parse(localStorage.getItem('proxy_global_enable') || 'true');
-                saveProxyConfig();
-            }
-        } catch (e) {
-            console.error("Auto-login failed:", e);
-            showToast('自动登录失败，请重新选择账号');
-            setActiveAccount(null);
-            showAuth();
-        }
+                // 3. === 激活后台静默预加载 ===
+                // 延迟 3 秒启动，完全不影响首屏交互体验
+                setTimeout(() => {
+                    startBackgroundPreloading();
+                }, 3000);
+
+            }, 1000);
+        });
     } else {
         showAuth();
+        setTimeout(checkServerInfo, 1500);
     }
     
+    
+    // 绑定发布管理相关按钮事件
     el.closePublishManagerBtn.onclick = hidePublishManagerModal;
     el.officialConfigTabBtn.onclick = () => {
         state.publishManagerActiveTab = 'official';
@@ -11240,109 +12327,138 @@ await autoClearCacheIfNeeded();
     };
 }
 
-
-document.addEventListener('DOMContentLoaded', async function() {
+// 启动入口
+document.addEventListener('DOMContentLoaded', function() {
+    // 禁用全局文本选择，提升 App 质感
     document.documentElement.style.userSelect = 'none';
+    
+    // 重置路由状态
     history.replaceState({ repo: null, path: '' }, '', window.location.pathname);
-    await init();
+    
+    // 执行初始化
+    init();
     initMediaPreview();
     initPullToRefresh();
-   window.addEventListener('popstate', async (event) => {
-    if (handleBackPress()) {
-        return;
-    }
 
-    state.shouldAnimateList = true;
-    const historyState = event.state || { view: 'own_repos' };
-
-    switch (historyState.view) {
-        case 'file_list':
-    let repoData = state.repos.find(r => r.full_name === historyState.repo) 
-                || state.starredRepos.find(r => r.full_name === historyState.repo)
-                || (state.currentRepoList && state.currentRepoList.find(r => r.full_name === historyState.repo));
-
-    if (repoData) {
-        navigateToRepo(repoData, historyState.branch || repoData.default_branch, historyState.path || '', false);
-    } else if (historyState.repo) {
-        try {
-            showToast('正在恢复导航状态...', 'info', 1000);
-            const res = await fetch(`https://api.github.com/repos/${historyState.repo}`, { headers: { Authorization: `token ${state.token}` } });
-            if (res.ok) {
-                const freshRepoData = await res.json();
-                navigateToRepo(freshRepoData, historyState.branch || freshRepoData.default_branch, historyState.path || '', false);
-            } else {
-                showToast('无法获取仓库信息，返回主列表', 'error');
-                state.currentView = 'own_repos';
-                showRepoListView();
-            }
-        } catch (e) {
-            showToast('网络错误，返回主列表', 'error');
-            state.currentView = 'own_repos';
-            showRepoListView();
+    // 绑定浏览器后退事件
+    window.addEventListener('popstate', async (event) => {
+        if (handleBackPress()) {
+            return;
         }
-    } else {
-        state.currentView = 'own_repos';
-        showRepoListView();
-    }
-    break;
-        
-        case 'releases_list':
-            await fetchAndDisplayReleases(historyState.repo, false);
-            break;
+
+        state.shouldAnimateList = true;
+        const historyState = event.state || { view: 'own_repos' };
+
+        if ((state.currentView === 'releases_list' || state.currentView === 'assets_list') && 
+            (historyState.view === 'releases_list' || historyState.view === 'assets_list')) {
+        } 
+        else if (historyState.view === 'file_list') {
+            state.viewingReleasesForRepo = null;
+            state.currentRelease = null;
+        }
+
+        switch (historyState.view) {
+            case 'file_list':
+                let repoData = state.repos.find(r => r.full_name === historyState.repo) 
+                            || state.starredRepos.find(r => r.full_name === historyState.repo)
+                            || (state.currentRepoList && state.currentRepoList.find(r => r.full_name === historyState.repo));
+
+                if (repoData) {
+                    navigateToRepo(repoData, historyState.branch || repoData.default_branch, historyState.path || '', false);
+                } else if (historyState.repo) {
+                    try {
+                        const res = await fetch(`https://api.github.com/repos/${historyState.repo}`, { headers: { Authorization: `token ${state.token}` } });
+                        if (res.ok) {
+                            const freshRepoData = await res.json();
+                            navigateToRepo(freshRepoData, historyState.branch || freshRepoData.default_branch, historyState.path || '', false);
+                        } else {
+                            console.warn('无法获取仓库详细信息，尝试仅使用路径导航');
+                            if (state.currentRepo === historyState.repo) {
+                                 state.currentPath = historyState.path || '';
+                                 state.currentBranch = historyState.branch || 'main';
+                                 fetchFiles(false);
+                                 renderPathNav();
+                                 updatePaginationUI();
+                            } else {
+                                showToast('无法获取仓库信息，返回主列表', 'error');
+                                state.currentView = 'own_repos';
+                                showRepoListView();
+                            }
+                        }
+                    } catch (e) {
+                        if (state.currentRepo === historyState.repo) {
+                             state.currentPath = historyState.path || '';
+                             fetchFiles(false);
+                             renderPathNav();
+                        } else {
+                            showToast('网络错误，返回主列表', 'error');
+                            state.currentView = 'own_repos';
+                            showRepoListView();
+                        }
+                    }
+                } else {
+                    state.currentView = 'own_repos';
+                    showRepoListView();
+                }
+                break;
             
-        case 'assets_list':
-            if (state.releases && state.releases.length > 0) {
-                const release = state.releases.find(r => r.id === historyState.releaseId);
-                if (release) {
-                    fetchAndDisplayAssets(release, false);
+            case 'releases_list':
+                if (historyState.repo) {
+                    state.viewingReleasesForRepo = historyState.repo;
+                    await fetchAndDisplayReleases(historyState.repo, false);
+                }
+                break;
+                
+            case 'assets_list':
+                if (historyState.repo) state.viewingReleasesForRepo = historyState.repo;
+                if (state.releases && state.releases.length > 0) {
+                    const release = state.releases.find(r => r.id === historyState.releaseId);
+                    if (release) {
+                        fetchAndDisplayAssets(release, false);
+                    } else {
+                        await fetchAndDisplayReleases(historyState.repo, false);
+                    }
                 } else {
                     await fetchAndDisplayReleases(historyState.repo, false);
                 }
-            } else {
-                await fetchAndDisplayReleases(historyState.repo, false);
-            }
-            break;
+                break;
 
-        case 'starred_repos':
-            state.currentView = 'starred_repos';
-            showRepoListView();
-            if (state.starredRepos.length === 0) {
-                await fetchStarredRepos(true);
-            } else {
-                renderRepoList(state.starredRepos);
-            }
-            setTimeout(() => { el.main.scrollTop = state.repoListScrollPosition; }, 0);
-            break;
+            case 'starred_repos':
+                state.currentView = 'starred_repos';
+                showRepoListView();
+                if (state.starredRepos.length === 0) {
+                    await fetchStarredRepos(true);
+                } else {
+                    renderRepoList(state.starredRepos);
+                }
+                setTimeout(() => { el.main.scrollTop = state.repoListScrollPosition; }, 0);
+                break;
 
-        case 'other_user_repos':
-            await _renderAndFetchUserRepos(historyState.owner);
-            break;
+            case 'other_user_repos':
+                await _renderAndFetchUserRepos(historyState.owner);
+                break;
 
-        case 'search_results':
-            await searchGlobalFiles(historyState.query, false);
-            break;
+            case 'search_results':
+                await searchGlobalFiles(historyState.query, false);
+                break;
 
-        case 'public_search_results':
-            await searchPublicRepositories(historyState.query, historyState.page || 1, false);
-            setTimeout(() => { el.main.scrollTop = state.repoListScrollPosition; }, 0);
-            break;
+            case 'public_search_results':
+                await searchPublicRepositories(historyState.query, historyState.page || 1, false);
+                setTimeout(() => { el.main.scrollTop = state.repoListScrollPosition; }, 0);
+                break;
 
-        case 'own_repos':
-        default:
-            state.currentView = 'own_repos';
-            showRepoListView();
-            state.repos = [...state.myRepos];
-            renderRepoList(state.repos);
-            setTimeout(() => { el.main.scrollTop = state.repoListScrollPosition; }, 0);
-            break;
-    }
-    
-    updatePaginationUI();
+            case 'own_repos':
+            default:
+                state.currentView = 'own_repos';
+                showRepoListView();
+                state.repos = [...state.myRepos];
+                renderRepoList(state.repos);
+                setTimeout(() => { el.main.scrollTop = state.repoListScrollPosition; }, 0);
+                break;
+        }
+        updatePaginationUI();
+    });
 });
-
-
-});
-
 
 
 
@@ -11485,12 +12601,21 @@ body.light-theme .update-log {
     document.head.appendChild(styleSheet);
 }
 
+// --- 新增：带超时的请求辅助函数 ---
+const fetchWithTimeout = (url, options = {}, timeout = 2500) => {
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), timeout);
+    return fetch(url, { ...options, signal: controller.signal })
+        .finally(() => clearTimeout(id));
+};
+
+// --- 优化后的 checkServerInfo 函数 ---
 async function checkServerInfo() {
     injectModalStyles();
     const CONFIG_URL = 'https://raw.githubusercontent.com/rjdsq/rjdsq.github.io/main/github/更新/更新2.0.json';
 
     const PROXY_PREFIXES = [
-        'https://gh.ptoe.cc/',
+        'https://gh.927223.xyz/',
         'https://ghproxy.net/',
         'https://ghfast.top/',
         'https://tvv.tw/'
@@ -11498,36 +12623,39 @@ async function checkServerInfo() {
 
     const timestamp = `?t=${new Date().getTime()}`;
 
+    // 构建所有可能的请求地址
     const urlsToTry = [
         ...PROXY_PREFIXES.map(prefix => prefix + CONFIG_URL + timestamp),
         CONFIG_URL + timestamp
     ];
 
     let serverInfo = null;
-    let success = false;
 
-    for (const url of urlsToTry) {
-        try {
-            const response = await fetch(url, { cache: 'no-store' });
-            if (response.ok) {
-                serverInfo = await response.json();
-                success = true;
-                break;
-            }
-        } catch (error) {
-            console.warn(`Attempt to fetch config from ${url} failed. Trying next...`);
-        }
+    try {
+        const promises = urlsToTry.map(url => 
+            fetchWithTimeout(url, { cache: 'no-store' }, 4000)
+                .then(res => {
+                    if (res.ok) return res.json();
+                    throw new Error('Response not ok');
+                })
+        );
+
+        // Promise.any 会等待第一个成功的请求，忽略失败的（直到所有都失败）
+        serverInfo = await Promise.any(promises);
+        
+    } catch (error) {
+        console.warn('检查更新失败：所有节点均超时或无法连接。但这不影响应用主功能使用。');
+        return; // 直接返回，不阻塞后续流程
     }
     
-    if (success && serverInfo) {
+    // 如果获取到了信息，继续处理
+    if (serverInfo) {
         try {
             handleUpdate(serverInfo);
             handleAnnouncement(serverInfo);
         } catch (processingError) {
-             console.error('Error processing server info:', processingError);
+             console.error('处理服务器信息出错:', processingError);
         }
-    } else {
-        console.error('Check for server info failed: All URLs were unreachable.');
     }
 }
 
@@ -11851,11 +12979,14 @@ const CloudEffectManager = {
         path: 'js'
     },
     activeEffects: new Map(),
+    cachedList: null,
+    loadingPromise: null,
 
     init() {
         this.injectStyles();
         this.bindEvents();
         this.restoreSettings();
+        this.preload();
     },
 
     injectStyles() {
@@ -11957,41 +13088,71 @@ const CloudEffectManager = {
         }
     },
 
+    preload() {
+        if (this.loadingPromise) return;
+
+        const headers = {};
+        if (typeof state !== 'undefined' && state.token) {
+            headers['Authorization'] = `token ${state.token}`;
+        }
+
+        const apiUrl = `https://api.github.com/repos/${this.settings.repoOwner}/${this.settings.repoName}/contents/${this.settings.path}`;
+        
+        this.loadingPromise = fetch(apiUrl, { headers })
+            .then(res => {
+                if (!res.ok) throw new Error(res.status);
+                return res.json();
+            })
+            .then(data => {
+                this.cachedList = data.filter(f => f.name.endsWith('.js'));
+                return this.cachedList;
+            })
+            .catch(e => {
+                console.warn('Effects preload failed:', e);
+                throw e;
+            });
+    },
+
     async loadList() {
         const listEl = document.getElementById('effectsList');
         if (!listEl) return;
 
+        if (this.cachedList) {
+            this.renderList(listEl, this.cachedList);
+            return;
+        }
+
         listEl.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
 
         try {
-            const headers = {};
-            if (typeof state !== 'undefined' && state.token) {
-                headers['Authorization'] = `token ${state.token}`;
+            if (!this.loadingPromise) {
+                this.preload();
             }
-
-            const apiUrl = `https://api.github.com/repos/${this.settings.repoOwner}/${this.settings.repoName}/contents/${this.settings.path}`;
-            const res = await fetch(apiUrl, { headers });
-
-            if (!res.ok) throw new Error(res.status);
-            const data = await res.json();
-
-            listEl.innerHTML = '';
-
-            const jsFiles = data.filter(f => f.name.endsWith('.js'));
-            if (jsFiles.length === 0) {
-                listEl.innerHTML = '<div class="empty-state"><p>暂无云端特效</p></div>';
-                return;
-            }
-
-            jsFiles.forEach(file => {
-                const name = file.name.replace('.js', '');
-                const rawUrl = file.download_url || `https://raw.githubusercontent.com/${this.settings.repoOwner}/${this.settings.repoName}/master/${this.settings.path}/${file.name}`;
-                this.renderItem(listEl, file.sha, name, rawUrl);
-            });
-
+            const data = await this.loadingPromise;
+            this.renderList(listEl, data);
         } catch (e) {
-            listEl.innerHTML = `<div class="empty-state"><p>${e.message}</p></div>`;
+            listEl.innerHTML = `<div class="empty-state"><p>加载失败，请检查网络</p><button class="btn btn-secondary btn-sm" style="margin-top:10px" onclick="CloudEffectManager.retryLoad()">重试</button></div>`;
         }
+    },
+
+    retryLoad() {
+        this.loadingPromise = null;
+        this.loadList();
+    },
+
+    renderList(container, list) {
+        container.innerHTML = '';
+        
+        if (!list || list.length === 0) {
+            container.innerHTML = '<div class="empty-state"><p>暂无云端特效</p></div>';
+            return;
+        }
+
+        list.forEach(file => {
+            const name = file.name.replace('.js', '');
+            const rawUrl = file.download_url || `https://raw.githubusercontent.com/${this.settings.repoOwner}/${this.settings.repoName}/master/${this.settings.path}/${file.name}`;
+            this.renderItem(container, file.sha, name, rawUrl);
+        });
     },
 
     renderItem(container, id, name, url) {
@@ -12202,6 +13363,5 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </body>
 </html>
