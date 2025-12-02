@@ -1,13 +1,13 @@
 (function() {
     const P = window.parent;
     const Doc = P.document;
-    const ID = 'cloud-gallery-plugin';
+    const ID = 'cloud-gallery-pro';
     
     if (Doc.getElementById(ID)) return;
 
     const STATE = {
-        images: [],
-        index: 0,
+        list: [],
+        idx: 0,
         active: false
     };
 
@@ -16,175 +16,177 @@
     const css = `
         #${ID} {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; z-index: 2147483648;
+            background: #000; z-index: 2147483647;
             display: flex; flex-direction: column;
-            opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+            opacity: 0; pointer-events: none; transition: opacity 0.2s ease;
         }
         #${ID}.active { opacity: 1; pointer-events: auto; }
-        #${ID} .cg-header {
-            position: absolute; top: 0; left: 0; width: 100%;
-            padding: 15px 20px;
-            background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
+        .cg-head {
+            position: absolute; top: 0; left: 0; width: 100%; height: 60px;
+            background: linear-gradient(180deg, rgba(0,0,0,0.8), transparent);
             display: flex; justify-content: space-between; align-items: center;
-            z-index: 2;
+            padding: 0 20px; z-index: 10;
         }
-        .cg-title { color: #fff; font-size: 14px; font-weight: 500; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
-        .cg-count { color: #9ca3af; font-size: 12px; }
+        .cg-info { color: #fff; font-size: 14px; text-shadow: 0 1px 3px rgba(0,0,0,0.8); }
+        .cg-idx { font-size: 12px; color: #9ca3af; margin-top: 2px; }
         .cg-close {
-            background: rgba(255,255,255,0.1); border: none; color: #fff;
-            width: 32px; height: 32px; border-radius: 50%;
-            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,0.15);
+            border: none; color: #fff; display: flex; align-items: center; justify-content: center;
+            font-size: 18px; cursor: pointer; backdrop-filter: blur(4px);
         }
-        #${ID} .cg-stage {
+        .cg-body {
             flex: 1; position: relative; display: flex; align-items: center; justify-content: center;
-            overflow: hidden; touch-action: none;
+            overflow: hidden;
         }
         .cg-img {
             max-width: 100%; max-height: 100%; object-fit: contain;
-            transition: transform 0.2s ease; user-select: none;
+            transform: scale(1); transition: transform 0.2s;
         }
-        .cg-loader {
-            position: absolute; width: 40px; height: 40px;
-            border: 3px solid rgba(255,255,255,0.1); border-top-color: #fff;
-            border-radius: 50%; animation: spin 1s linear infinite;
+        .cg-loading {
+            position: absolute; width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.2);
+            border-top-color: #fff; border-radius: 50%; animation: cgSpin 0.8s linear infinite;
         }
         .cg-nav {
             position: absolute; top: 50%; transform: translateY(-50%);
-            width: 50px; height: 100px; cursor: pointer;
-            display: flex; align-items: center; justify-content: center;
-            color: rgba(255,255,255,0.5); font-size: 24px; transition: 0.2s;
-            z-index: 2;
+            width: 60px; height: 100px; display: flex; align-items: center; justify-content: center;
+            font-size: 30px; color: rgba(255,255,255,0.4); cursor: pointer; z-index: 5;
         }
-        .cg-nav:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        .cg-nav:active { color: #fff; background: rgba(0,0,0,0.2); }
         .cg-prev { left: 0; }
         .cg-next { right: 0; }
-        .cg-toolbar {
-            position: absolute; bottom: 0; left: 0; width: 100%;
-            padding: 20px; background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
-            display: flex; justify-content: center; gap: 20px; z-index: 2;
+        .cg-foot {
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 80px;
+            background: linear-gradient(0deg, rgba(0,0,0,0.8), transparent);
+            display: flex; justify-content: center; align-items: center; gap: 20px; z-index: 10;
         }
         .cg-btn {
-            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
-            color: #fff; padding: 6px 16px; border-radius: 20px; font-size: 12px;
+            padding: 8px 20px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.3);
+            background: rgba(255,255,255,0.1); color: #fff; font-size: 13px;
             cursor: pointer; backdrop-filter: blur(4px);
         }
-        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes cgSpin { to { transform: rotate(360deg); } }
     `;
 
     const styleEl = Doc.createElement('style');
     styleEl.innerHTML = css;
     Doc.head.appendChild(styleEl);
 
-    const container = Doc.createElement('div');
-    container.id = ID;
-    container.innerHTML = `
-        <div class="cg-header">
+    const el = Doc.createElement('div');
+    el.id = ID;
+    el.innerHTML = `
+        <div class="cg-head">
             <div>
-                <div class="cg-title">Loading...</div>
-                <div class="cg-count">0 / 0</div>
+                <div class="cg-info" id="cg-name"></div>
+                <div class="cg-idx" id="cg-count"></div>
             </div>
             <button class="cg-close"><i class="fa-solid fa-xmark"></i></button>
         </div>
-        <div class="cg-stage">
-            <div class="cg-loader"></div>
-            <img class="cg-img" src="" alt="">
+        <div class="cg-body">
+            <div class="cg-loading"></div>
+            <img class="cg-img" src="" draggable="false">
             <div class="cg-nav cg-prev"><i class="fa-solid fa-chevron-left"></i></div>
             <div class="cg-nav cg-next"><i class="fa-solid fa-chevron-right"></i></div>
         </div>
-        <div class="cg-toolbar">
-            <button class="cg-btn" id="cg-dl">下载原图</button>
-            <button class="cg-btn" id="cg-copy">复制链接</button>
+        <div class="cg-foot">
+            <button class="cg-btn" id="cg-dl">下载</button>
+            <button class="cg-btn" id="cg-cp">复制链接</button>
         </div>
     `;
-    Doc.body.appendChild(container);
+    Doc.body.appendChild(el);
 
-    const els = {
-        title: container.querySelector('.cg-title'),
-        count: container.querySelector('.cg-count'),
-        img: container.querySelector('.cg-img'),
-        loader: container.querySelector('.cg-loader'),
-        close: container.querySelector('.cg-close'),
-        prev: container.querySelector('.cg-prev'),
-        next: container.querySelector('.cg-next'),
-        dl: container.querySelector('#cg-dl'),
-        copy: container.querySelector('#cg-copy')
+    const ui = {
+        name: el.querySelector('#cg-name'),
+        count: el.querySelector('#cg-count'),
+        img: el.querySelector('.cg-img'),
+        load: el.querySelector('.cg-loading'),
+        close: el.querySelector('.cg-close'),
+        prev: el.querySelector('.cg-prev'),
+        next: el.querySelector('.cg-next'),
+        dl: el.querySelector('#cg-dl'),
+        cp: el.querySelector('#cg-cp')
     };
 
-    function scanImages() {
-        const tree = P.state.repoTreeCache || P.state.files || [];
-        STATE.images = tree.filter(f => {
-            const ext = (f.name || f.path).split('.').pop().toLowerCase();
-            return EXTS.includes(ext) && f.type !== 'tree';
+    function getProxy(url) {
+        return P.getProxiedUrl ? P.getProxiedUrl(url) : url;
+    }
+
+    function refreshData() {
+        let src = P.state.repoTreeCache;
+        if (!src || !Array.isArray(src) || src.length === 0) {
+            src = P.state.files || [];
+        }
+        STATE.list = src.filter(f => {
+            const n = f.name || f.path.split('/').pop();
+            return EXTS.includes(n.split('.').pop().toLowerCase()) && f.type !== 'tree';
         }).map(f => ({
             name: f.name || f.path.split('/').pop(),
             path: f.path,
-            url: ''
+            url: '' 
         }));
     }
 
-    function loadImage(index) {
-        if (!STATE.images[index]) return;
-        STATE.index = index;
-        const item = STATE.images[index];
+    function showImg(idx) {
+        if (!STATE.list[idx]) return;
+        STATE.idx = idx;
+        const item = STATE.list[idx];
         
-        els.title.textContent = item.name;
-        els.count.textContent = `${index + 1} / ${STATE.images.length}`;
-        els.loader.style.display = 'block';
-        els.img.style.opacity = '0';
+        ui.name.textContent = item.name;
+        ui.count.textContent = `${idx + 1} / ${STATE.list.length}`;
+        ui.load.style.display = 'block';
+        ui.img.style.opacity = '0';
+        ui.img.style.transform = 'scale(1)';
 
-        const repo = P.state.currentRepo;
-        const branch = P.state.currentBranch;
-        const rawUrl = `https://raw.githubusercontent.com/${repo}/${branch}/${item.path}`;
-        const proxyUrl = P.getProxiedUrl ? P.getProxiedUrl(rawUrl) : rawUrl;
-        
-        item.url = proxyUrl;
+        const r = P.state.currentRepo;
+        const b = P.state.currentBranch;
+        const raw = `https://raw.githubusercontent.com/${r}/${b}/${item.path}`;
+        const url = getProxy(raw);
+        item.url = url;
 
-        const tmpImg = new Image();
-        tmpImg.src = proxyUrl;
-        tmpImg.onload = () => {
-            els.img.src = proxyUrl;
-            els.img.style.opacity = '1';
-            els.loader.style.display = 'none';
+        const i = new Image();
+        i.src = url;
+        i.onload = () => {
+            ui.img.src = url;
+            ui.img.style.opacity = '1';
+            ui.load.style.display = 'none';
         };
-        tmpImg.onerror = () => {
-            els.loader.style.display = 'none';
-            P.showToast('图片加载失败');
+        i.onerror = () => {
+            ui.load.style.display = 'none';
+            if(typeof P.showToast === 'function') P.showToast('图片加载失败');
         };
     }
 
-    function openGallery(fileName) {
-        scanImages();
-        const idx = STATE.images.findIndex(i => i.name === fileName || i.path.endsWith(fileName));
+    function open(name) {
+        refreshData();
+        if (STATE.list.length === 0) return;
+        
+        let target = STATE.list.findIndex(i => i.name === name || i.path.endsWith(name));
+        if (target === -1) target = 0;
+        
         STATE.active = true;
-        container.classList.add('active');
-        loadImage(idx !== -1 ? idx : 0);
+        el.classList.add('active');
+        showImg(target);
     }
 
-    function closeGallery() {
+    function close() {
         STATE.active = false;
-        container.classList.remove('active');
-        els.img.src = '';
+        el.classList.remove('active');
+        setTimeout(() => { ui.img.src = ''; }, 200);
     }
 
-    function prev() {
-        let newIndex = STATE.index - 1;
-        if (newIndex < 0) newIndex = STATE.images.length - 1;
-        loadImage(newIndex);
+    function switchImg(dir) {
+        let n = STATE.idx + dir;
+        if (n < 0) n = STATE.list.length - 1;
+        if (n >= STATE.list.length) n = 0;
+        showImg(n);
     }
 
-    function next() {
-        let newIndex = STATE.index + 1;
-        if (newIndex >= STATE.images.length) newIndex = 0;
-        loadImage(newIndex);
-    }
-
-    els.close.onclick = closeGallery;
-    els.prev.onclick = (e) => { e.stopPropagation(); prev(); };
-    els.next.onclick = (e) => { e.stopPropagation(); next(); };
+    ui.close.onclick = close;
+    ui.prev.onclick = (e) => { e.stopPropagation(); switchImg(-1); };
+    ui.next.onclick = (e) => { e.stopPropagation(); switchImg(1); };
     
-    els.dl.onclick = (e) => {
+    ui.dl.onclick = (e) => {
         e.stopPropagation();
-        const item = STATE.images[STATE.index];
+        const item = STATE.list[STATE.idx];
         const a = Doc.createElement('a');
         a.href = item.url;
         a.download = item.name;
@@ -193,33 +195,31 @@
         Doc.body.removeChild(a);
     };
 
-    els.copy.onclick = (e) => {
+    ui.cp.onclick = (e) => {
         e.stopPropagation();
-        const item = STATE.images[STATE.index];
-        navigator.clipboard.writeText(item.url).then(() => P.showToast('链接已复制'));
+        navigator.clipboard.writeText(STATE.list[STATE.idx].url).then(() => {
+            if(typeof P.showToast === 'function') P.showToast('链接已复制');
+        });
     };
 
-    Doc.addEventListener('keydown', (e) => {
-        if (!STATE.active) return;
-        if (e.key === 'Escape') closeGallery();
-        if (e.key === 'ArrowLeft') prev();
-        if (e.key === 'ArrowRight') next();
-    });
+    el.onclick = close;
+    ui.img.onclick = (e) => e.stopPropagation();
 
-    const fileListEl = Doc.getElementById('fileList');
-    if (fileListEl) {
-        fileListEl.addEventListener('click', (e) => {
-            const item = e.target.closest('.file-item');
-            if (!item) return;
-            const nameEl = item.querySelector('.file-name');
-            if (!nameEl) return;
-            const name = nameEl.textContent.trim();
-            const ext = name.split('.').pop().toLowerCase();
-            if (EXTS.includes(ext)) {
-                e.preventDefault();
-                e.stopPropagation();
-                openGallery(name);
-            }
-        }, true);
-    }
+    Doc.addEventListener('click', (e) => {
+        const item = e.target.closest('.file-item');
+        if (!item) return;
+        
+        const nameNode = item.querySelector('.file-name');
+        if (!nameNode) return;
+        
+        const name = nameNode.textContent.trim();
+        const ext = name.split('.').pop().toLowerCase();
+        
+        if (EXTS.includes(ext)) {
+            e.preventDefault();
+            e.stopPropagation();
+            open(name);
+        }
+    }, true); 
+
 })();
