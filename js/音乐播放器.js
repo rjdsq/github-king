@@ -1,438 +1,278 @@
 (function() {
-    const parentWindow = window.parent;
-    const doc = document;
+    const P = window.parent;
+    const Doc = P.document;
+    
+    if (Doc.getElementById('cloud-float-player')) return;
+
+    const CONFIG = {
+        id: 'cloud-float-player',
+        exts: ['mp3', 'wav', 'ogg', 'flac', 'm4a', 'aac'],
+        color: '#10b981'
+    };
+
     let playList = [];
-    let currentIndex = 0;
-    let isRandom = false;
-    const supportedExts = ['mp3', 'wav', 'ogg', 'flac', 'm4a'];
-
-    const iframe = window.frameElement;
-    if (iframe) {
-        iframe.style.pointerEvents = 'auto';
-        iframe.style.zIndex = '999999';
-        iframe.style.position = 'fixed';
-        iframe.style.top = '0';
-        iframe.style.left = '0';
-        iframe.style.width = '100%';
-        iframe.style.height = '100%';
-        doc.body.style.background = 'transparent';
-    }
-
-    const style = doc.createElement('style');
+    let curIndex = 0;
+    let isPlaying = false;
+    let isExpanded = false;
+    
+    const style = Doc.createElement('style');
     style.innerHTML = `
-        * { box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
-        #app-player {
+        #${CONFIG.id} {
             position: fixed;
-            bottom: 80px;
+            bottom: 120px;
             right: 20px;
-            width: 320px;
-            background: rgba(16, 18, 27, 0.85);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-radius: 16px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-            color: #fff;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            z-index: 10000;
-            overflow: hidden;
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s;
-            transform-origin: bottom right;
+            z-index: 2147483647;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
-        #app-player.minimized {
+        #${CONFIG.id} .cover-box {
             width: 50px;
             height: 50px;
             border-radius: 50%;
+            background: #1f2937;
+            border: 2px solid rgba(255,255,255,0.1);
+            overflow: hidden;
             cursor: pointer;
-            padding: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: linear-gradient(135deg, #10b981, #3b82f6);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            position: relative;
+            z-index: 2;
+            animation: spin 10s linear infinite;
+            animation-play-state: paused;
+            transition: transform 0.2s;
         }
-        #app-player.minimized .player-body, 
-        #app-player.minimized .playlist-panel { display: none; }
-        #app-player.minimized::after {
+        #${CONFIG.id} .cover-box:active { transform: scale(0.9); }
+        #${CONFIG.id} .cover-box.playing { animation-play-state: running; border-color: ${CONFIG.color}; box-shadow: 0 0 15px ${CONFIG.color}66; }
+        #${CONFIG.id} .cover-box::after {
             content: '\\f001';
-            font-family: "Font Awesome 6 Free";
+            font-family: 'Font Awesome 6 Free';
             font-weight: 900;
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            color: #fff;
             font-size: 20px;
         }
-        .player-header {
-            padding: 12px 15px;
-            background: rgba(255,255,255,0.05);
+        #${CONFIG.id} .player-panel {
+            background: rgba(17, 24, 39, 0.9);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 10px 15px;
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            cursor: move;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-        }
-        .track-info {
-            padding: 15px;
-            text-align: center;
-        }
-        .track-title {
-            font-size: 14px;
-            font-weight: 600;
-            margin-bottom: 4px;
-            white-space: nowrap;
+            flex-direction: column;
+            width: 0;
+            opacity: 0;
+            transform: translateX(20px);
+            pointer-events: none;
+            transition: all 0.3s ease;
             overflow: hidden;
-            text-overflow: ellipsis;
-            color: #e0e7ff;
+            white-space: nowrap;
         }
-        .track-meta {
-            font-size: 10px;
-            color: #94a3b8;
+        #${CONFIG.id}.expanded .player-panel {
+            width: 240px;
+            opacity: 1;
+            transform: translateX(0);
+            pointer-events: auto;
         }
-        .controls {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 20px;
-            padding-bottom: 15px;
-        }
-        .btn {
-            background: none;
-            border: none;
-            color: #e0e7ff;
-            cursor: pointer;
-            font-size: 16px;
-            transition: 0.2s;
-            opacity: 0.8;
-        }
-        .btn:hover { opacity: 1; transform: scale(1.1); }
-        .btn-main {
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(135deg, #10b981, #3b82f6);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
-        }
-        .progress-container {
-            width: 100%;
-            height: 4px;
-            background: rgba(255,255,255,0.1);
-            cursor: pointer;
-            position: relative;
-        }
-        .progress-bar {
-            height: 100%;
-            background: #3b82f6;
-            width: 0%;
-            border-radius: 0 2px 2px 0;
-            position: relative;
-        }
-        .playlist-panel {
-            max-height: 0;
-            overflow-y: auto;
-            background: rgba(0,0,0,0.2);
-            transition: max-height 0.3s ease;
-        }
-        .playlist-panel.open { max-height: 200px; }
-        .playlist-item {
-            padding: 8px 15px;
-            font-size: 12px;
-            color: #cbd5e1;
-            cursor: pointer;
-            border-bottom: 1px solid rgba(255,255,255,0.03);
-            display: flex;
-            justify-content: space-between;
-        }
-        .playlist-item:hover { background: rgba(255,255,255,0.05); }
-        .playlist-item.active { color: #3b82f6; font-weight: bold; background: rgba(59, 130, 246, 0.1); }
-        .playlist-item .duration { opacity: 0.6; font-size: 10px; }
-        .min-btn { font-size: 12px; opacity: 0.5; }
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 2px; }
+        .cfp-title { font-size: 12px; color: #fff; margin-bottom: 6px; overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
+        .cfp-controls { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+        .cfp-btn { background: none; border: none; color: #9ca3af; cursor: pointer; font-size: 14px; padding: 4px; transition: color 0.2s; }
+        .cfp-btn:hover { color: ${CONFIG.color}; }
+        .cfp-progress { width: 100%; height: 3px; background: rgba(255,255,255,0.1); margin-top: 8px; border-radius: 2px; position: relative; cursor: pointer; }
+        .cfp-bar { height: 100%; background: ${CONFIG.color}; width: 0%; border-radius: 2px; transition: width 0.1s linear; }
+        
+        body.light-theme #${CONFIG.id} .cover-box { background: #fff; border-color: #e5e7eb; }
+        body.light-theme #${CONFIG.id} .cover-box::after { color: #374151; }
+        body.light-theme #${CONFIG.id} .player-panel { background: rgba(255, 255, 255, 0.9); border-color: #e5e7eb; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+        body.light-theme .cfp-title { color: #1f2937; }
+        body.light-theme .cfp-btn { color: #6b7280; }
+        
+        @keyframes spin { 100% { transform: rotate(360deg); } }
     `;
-    doc.head.appendChild(style);
+    Doc.head.appendChild(style);
 
-    const wrapper = doc.createElement('div');
-    wrapper.id = 'app-player';
-    wrapper.innerHTML = `
-        <div class="player-header">
-            <span style="font-size:12px; font-weight:bold; color:#10b981;"><i class="fa-solid fa-cloud"></i> CloudMusic</span>
-            <div style="display:flex; gap:10px;">
-                <button class="btn min-btn" id="toggleList"><i class="fa-solid fa-list"></i></button>
-                <button class="btn min-btn" id="minimizeBtn"><i class="fa-solid fa-minus"></i></button>
+    const container = Doc.createElement('div');
+    container.id = CONFIG.id;
+    container.innerHTML = `
+        <div class="player-panel">
+            <div class="cfp-title">Cloud Music Player</div>
+            <div class="cfp-controls">
+                <button class="cfp-btn" id="cfp-prev"><i class="fa-solid fa-backward-step"></i></button>
+                <button class="cfp-btn" id="cfp-play"><i class="fa-solid fa-play"></i></button>
+                <button class="cfp-btn" id="cfp-next"><i class="fa-solid fa-forward-step"></i></button>
+                <button class="cfp-btn" id="cfp-list" title="刷新列表"><i class="fa-solid fa-rotate"></i></button>
             </div>
+            <div class="cfp-progress"><div class="cfp-bar"></div></div>
         </div>
-        <div class="player-body">
-            <div class="track-info">
-                <div class="track-title" id="mTitle">未播放</div>
-                <div class="track-meta" id="mMeta">等待操作...</div>
-            </div>
-            <div class="controls">
-                <button class="btn" id="prevBtn"><i class="fa-solid fa-backward-step"></i></button>
-                <button class="btn btn-main" id="playBtn"><i class="fa-solid fa-play"></i></button>
-                <button class="btn" id="nextBtn"><i class="fa-solid fa-forward-step"></i></button>
-                <button class="btn" id="modeBtn" title="顺序播放"><i class="fa-solid fa-repeat"></i></button>
-            </div>
-            <div class="progress-container" id="progressWrap">
-                <div class="progress-bar" id="progressBar"></div>
-            </div>
-        </div>
-        <div class="playlist-panel" id="playlist"></div>
-        <audio id="audioEl" crossorigin="anonymous"></audio>
+        <div class="cover-box" id="cfp-cover"></div>
+        <audio id="cfp-audio" style="display:none;" crossorigin="anonymous"></audio>
     `;
-    doc.body.appendChild(wrapper);
+    Doc.body.appendChild(container);
 
-    const audio = doc.getElementById('audioEl');
-    const playBtn = doc.getElementById('playBtn');
-    const progressBar = doc.getElementById('progressBar');
-    const mTitle = doc.getElementById('mTitle');
-    const mMeta = doc.getElementById('mMeta');
-    const playlistEl = doc.getElementById('playlist');
-    const toggleListBtn = doc.getElementById('toggleList');
-    const minimizeBtn = doc.getElementById('minimizeBtn');
-    const modeBtn = doc.getElementById('modeBtn');
+    const audio = Doc.getElementById('cfp-audio');
+    const titleEl = container.querySelector('.cfp-title');
+    const playBtn = Doc.getElementById('cfp-play');
+    const bar = container.querySelector('.cfp-bar');
+    const cover = Doc.getElementById('cfp-cover');
+    const progressEl = container.querySelector('.cfp-progress');
 
-    function formatName(name) {
-        return name.replace(/\.[^/.]+$/, "");
+    function cleanName(filename) {
+        const name = filename.split('/').pop().replace(/\.[^/.]+$/, "");
+        return name.replace(/[^\u4e00-\u9fa5a-zA-Z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
     }
 
-    function scanRepoMusic() {
-        const repoCache = parentWindow.state.repoTreeCache;
-        const currentFiles = parentWindow.state.files;
-        let source = [];
-
-        if (repoCache && Array.isArray(repoCache)) {
-            source = repoCache;
-        } else if (currentFiles && Array.isArray(currentFiles)) {
-            source = currentFiles;
-        }
-
-        const newMap = new Map();
+    function scan() {
+        const tree = P.state.repoTreeCache || P.state.files || [];
+        if (!Array.isArray(tree)) return;
         
-        source.forEach(file => {
-            const ext = file.path ? file.path.split('.').pop().toLowerCase() : '';
-            if (supportedExts.includes(ext) && file.type !== 'tree' && file.type !== 'dir') {
-                const cleanName = formatName(file.name || file.path.split('/').pop());
-                const rawUrl = file.download_url || 
-                    `https://raw.githubusercontent.com/${parentWindow.state.currentRepo}/${parentWindow.state.currentBranch}/${file.path}`;
-                
-                newMap.set(file.path, {
-                    name: cleanName,
-                    path: file.path,
-                    url: parentWindow.getProxiedUrl(rawUrl),
-                    originalUrl: rawUrl
+        const temp = [];
+        tree.forEach(f => {
+            const ext = (f.name || f.path).split('.').pop().toLowerCase();
+            if (CONFIG.exts.includes(ext) && f.type !== 'tree') {
+                const fullPath = f.path || f.name;
+                temp.push({
+                    name: cleanName(fullPath),
+                    path: fullPath,
+                    rawName: f.name || f.path.split('/').pop()
                 });
             }
         });
-
-        playList = Array.from(newMap.values());
-        renderPlaylist();
-    }
-
-    function renderPlaylist() {
-        playlistEl.innerHTML = '';
-        if (playList.length === 0) {
-            playlistEl.innerHTML = '<div style="padding:10px; text-align:center; color:#64748b;">当前仓库无音乐</div>';
-            return;
+        
+        if (temp.length > 0) {
+            playList = temp;
+            if (typeof P.showToast === 'function') P.showToast(`云端播放器：已加载 ${playList.length} 首音乐`);
         }
-        playList.forEach((item, index) => {
-            const div = doc.createElement('div');
-            div.className = `playlist-item ${index === currentIndex ? 'active' : ''}`;
-            div.innerHTML = `<span>${index + 1}. ${item.name}</span>`;
-            div.onclick = () => playTrack(index);
-            playlistEl.appendChild(div);
-        });
-        mMeta.textContent = `播放列表: ${playList.length} 首`;
     }
 
-    function playTrack(index) {
+    function play(index) {
         if (!playList[index]) return;
-        currentIndex = index;
-        const track = playList[index];
+        curIndex = index;
+        const item = playList[index];
         
-        audio.src = track.url;
-        audio.play().catch(e => console.log('Auto-play blocked', e));
+        const repo = P.state.currentRepo;
+        const branch = P.state.currentBranch;
+        const rawUrl = `https://raw.githubusercontent.com/${repo}/${branch}/${item.path}`;
+        const finalUrl = typeof P.getProxiedUrl === 'function' ? P.getProxiedUrl(rawUrl) : rawUrl;
+
+        audio.src = finalUrl;
+        audio.play().then(() => {
+            isPlaying = true;
+            updateUI();
+        }).catch(() => {
+            isPlaying = false;
+            updateUI();
+            if (typeof P.showToast === 'function') P.showToast('播放失败，请检查网络或代理');
+        });
+
+        titleEl.textContent = item.name;
+        titleEl.title = item.name;
         
-        mTitle.textContent = track.name;
-        mMeta.textContent = `缓冲中...`;
-        updatePlayState(true);
-        renderPlaylist();
-        
-        if (typeof parentWindow.showToast === 'function') {
-            parentWindow.showToast(`正在播放: ${track.name}`);
-        }
+        if (!isExpanded) toggleExpand();
     }
 
-    function updatePlayState(isPlaying) {
-        playBtn.innerHTML = isPlaying ? '<i class="fa-solid fa-pause"></i>' : '<i class="fa-solid fa-play"></i>';
-    }
-
-    function togglePlay() {
-        if (audio.paused) {
-            if (!audio.src && playList.length > 0) playTrack(0);
-            else audio.play();
+    function updateUI() {
+        if (isPlaying) {
+            playBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
+            cover.classList.add('playing');
         } else {
-            audio.pause();
+            playBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
+            cover.classList.remove('playing');
         }
     }
 
-    function nextTrack() {
-        if (playList.length === 0) return;
-        let nextIndex;
-        if (isRandom) {
-            nextIndex = Math.floor(Math.random() * playList.length);
+    function toggleExpand() {
+        isExpanded = !isExpanded;
+        if (isExpanded) container.classList.add('expanded');
+        else container.classList.remove('expanded');
+    }
+
+    cover.onclick = (e) => {
+        e.stopPropagation();
+        toggleExpand();
+    };
+
+    playBtn.onclick = () => {
+        if (playList.length === 0) scan();
+        if (audio.src) {
+            if (audio.paused) audio.play();
+            else audio.pause();
         } else {
-            nextIndex = (currentIndex + 1) % playList.length;
-        }
-        playTrack(nextIndex);
-    }
-
-    function prevTrack() {
-        if (playList.length === 0) return;
-        let prevIndex = (currentIndex - 1 + playList.length) % playList.length;
-        playTrack(prevIndex);
-    }
-
-    playBtn.onclick = togglePlay;
-    doc.getElementById('nextBtn').onclick = nextTrack;
-    doc.getElementById('prevBtn').onclick = prevTrack;
-
-    modeBtn.onclick = () => {
-        isRandom = !isRandom;
-        modeBtn.innerHTML = isRandom ? '<i class="fa-solid fa-shuffle"></i>' : '<i class="fa-solid fa-repeat"></i>';
-        modeBtn.title = isRandom ? '随机播放' : '顺序播放';
-        if (typeof parentWindow.showToast === 'function') {
-            parentWindow.showToast(isRandom ? '已切换：随机播放' : '已切换：顺序播放');
+            play(0);
         }
     };
 
-    audio.addEventListener('play', () => updatePlayState(true));
-    audio.addEventListener('pause', () => updatePlayState(false));
-    audio.addEventListener('timeupdate', () => {
+    Doc.getElementById('cfp-prev').onclick = () => {
+        let next = curIndex - 1;
+        if (next < 0) next = playList.length - 1;
+        play(next);
+    };
+
+    Doc.getElementById('cfp-next').onclick = () => {
+        let next = curIndex + 1;
+        if (next >= playList.length) next = 0;
+        play(next);
+    };
+
+    Doc.getElementById('cfp-list').onclick = () => {
+        scan();
+        if (typeof P.showToast === 'function') P.showToast('已刷新仓库音乐列表');
+    };
+
+    audio.onplay = () => { isPlaying = true; updateUI(); };
+    audio.onpause = () => { isPlaying = false; updateUI(); };
+    audio.onended = () => Doc.getElementById('cfp-next').click();
+    audio.ontimeupdate = () => {
         if (audio.duration) {
-            const percent = (audio.currentTime / audio.duration) * 100;
-            progressBar.style.width = `${percent}%`;
-            mMeta.textContent = `${formatTime(audio.currentTime)} / ${formatTime(audio.duration)}`;
-        }
-    });
-    audio.addEventListener('ended', nextTrack);
-    audio.addEventListener('error', () => {
-        mMeta.textContent = "加载失败，尝试下一首";
-        setTimeout(nextTrack, 1000);
-    });
-
-    doc.getElementById('progressWrap').onclick = (e) => {
-        const rect = e.target.getBoundingClientRect();
-        const pos = (e.clientX - rect.left) / rect.width;
-        if (audio.duration) audio.currentTime = pos * audio.duration;
-    };
-
-    toggleListBtn.onclick = () => {
-        playlistEl.classList.toggle('open');
-    };
-
-    minimizeBtn.onclick = () => {
-        wrapper.classList.toggle('minimized');
-        if (wrapper.classList.contains('minimized')) {
-            playlistEl.classList.remove('open');
+            bar.style.width = (audio.currentTime / audio.duration * 100) + '%';
         }
     };
 
-    wrapper.onclick = (e) => {
-        if (wrapper.classList.contains('minimized')) {
-            wrapper.classList.remove('minimized');
-        }
+    progressEl.onclick = (e) => {
+        if (!audio.duration) return;
+        const rect = progressEl.getBoundingClientRect();
+        const percent = (e.clientX - rect.left) / rect.width;
+        audio.currentTime = percent * audio.duration;
     };
 
-    function formatTime(s) {
-        const m = Math.floor(s / 60);
-        const sec = Math.floor(s % 60);
-        return `${m}:${sec < 10 ? '0' : ''}${sec}`;
-    }
-
-    if (parentWindow.audioManager) {
-        parentWindow.audioManager.play = function(url, name) {
-            const cleanName = formatName(name);
-            const exists = playList.findIndex(p => p.url === url || p.name === cleanName);
+    // 核心逻辑：事件捕获劫持
+    const fileListEl = Doc.getElementById('fileList');
+    if (fileListEl) {
+        fileListEl.addEventListener('click', (e) => {
+            const item = e.target.closest('.file-item');
+            if (!item) return;
             
-            if (exists !== -1) {
-                playTrack(exists);
-            } else {
-                playList.unshift({
-                    name: cleanName,
-                    url: url,
-                    path: 'temp'
-                });
-                renderPlaylist();
-                playTrack(0);
+            const nameEl = item.querySelector('.file-name');
+            if (!nameEl) return;
+            
+            const fileName = nameEl.textContent.trim();
+            const ext = fileName.split('.').pop().toLowerCase();
+            
+            if (CONFIG.exts.includes(ext)) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                if (playList.length === 0) scan();
+                
+                const foundIndex = playList.findIndex(p => p.rawName === fileName);
+                if (foundIndex !== -1) {
+                    play(foundIndex);
+                } else {
+                    // 如果列表还没同步，临时添加
+                    const path = item.dataset.filePath || fileName;
+                    playList.unshift({
+                        name: cleanName(fileName),
+                        path: path,
+                        rawName: fileName
+                    });
+                    play(0);
+                }
             }
-            if (wrapper.classList.contains('minimized')) {
-                wrapper.classList.remove('minimized');
-            }
-        };
+        }, true); // 使用 true 开启捕获模式，优先处理
     }
 
-    let isDragging = false;
-    let startX, startY, initialLeft, initialTop;
-    const dragHeader = wrapper.querySelector('.player-header');
-
-    dragHeader.addEventListener('mousedown', dragStart);
-    dragHeader.addEventListener('touchstart', dragStart, {passive: false});
-
-    function dragStart(e) {
-        if (e.target.closest('button')) return;
-        e.preventDefault();
-        if (wrapper.classList.contains('minimized')) return;
-        
-        isDragging = true;
-        const clientX = e.clientX || e.touches[0].clientX;
-        const clientY = e.clientY || e.touches[0].clientY;
-        
-        const rect = wrapper.getBoundingClientRect();
-        startX = clientX;
-        startY = clientY;
-        initialLeft = rect.left;
-        initialTop = rect.top;
-
-        doc.addEventListener('mousemove', drag);
-        doc.addEventListener('touchmove', drag, {passive: false});
-        doc.addEventListener('mouseup', dragEnd);
-        doc.addEventListener('touchend', dragEnd);
-    }
-
-    function drag(e) {
-        if (!isDragging) return;
-        e.preventDefault();
-        const clientX = e.clientX || e.touches[0].clientX;
-        const clientY = e.clientY || e.touches[0].clientY;
-        
-        const dx = clientX - startX;
-        const dy = clientY - startY;
-        
-        wrapper.style.right = 'auto';
-        wrapper.style.bottom = 'auto';
-        wrapper.style.left = `${initialLeft + dx}px`;
-        wrapper.style.top = `${initialTop + dy}px`;
-    }
-
-    function dragEnd() {
-        isDragging = false;
-        doc.removeEventListener('mousemove', drag);
-        doc.removeEventListener('touchmove', drag);
-        doc.removeEventListener('mouseup', dragEnd);
-        doc.removeEventListener('touchend', dragEnd);
-    }
-
-    const observer = new MutationObserver(() => {
-        if (parentWindow.state.currentRepo) {
-            setTimeout(scanRepoMusic, 1000);
-        }
-    });
-    
-    observer.observe(parentWindow.document.getElementById('repoList'), { childList: true, subtree: true });
-    observer.observe(parentWindow.document.getElementById('fileList'), { childList: true, subtree: true });
-
-    scanRepoMusic();
-    
-    if (typeof parentWindow.showToast === 'function') {
-        parentWindow.showToast('云端音乐播放器已就绪', 'success');
-    }
+    // 初始化扫描
+    setTimeout(scan, 1000);
 })();
