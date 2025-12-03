@@ -1,88 +1,68 @@
-// 创建下雨特效无需样式
-function createRainEffect() {
-    // 创建雨滴容器
-    const rainContainer = document.createElement('div');
-    rainContainer.style.position = 'fixed';
-    rainContainer.style.top = '0';
-    rainContainer.style.left = '0';
-    rainContainer.style.width = '100%';
-    rainContainer.style.height = '100%';
-    rainContainer.style.pointerEvents = 'none';
-    rainContainer.style.zIndex = '9999';
-    document.body.appendChild(rainContainer);
+(function() {
+    var canvas = document.createElement('canvas');
+    var ctx = canvas.getContext('2d');
+    var w, h;
+    var drops = [];
+    var maxDrops = 100;
+    var animationId;
 
-    // 雨滴数量（根据窗口大小调整）
-    
-    
-    const rainCount = Math.floor(window.innerWidth * window.innerHeight / 7000);
-    
-    
-    // 创建雨滴
-    for (let i = 0; i < rainCount; i++) {
-        createRaindrop(rainContainer);
+    canvas.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:-1;pointer-events:none;';
+    document.body.appendChild(canvas);
+
+    function init() {
+        w = window.innerWidth;
+        h = window.innerHeight;
+        canvas.width = w;
+        canvas.height = h;
+        
+        var density = w < 600 ? 15 : 10; 
+        maxDrops = Math.floor(w / density);
+        
+        drops = [];
+        for (var i = 0; i < maxDrops; i++) {
+            drops.push({
+                x: Math.random() * w,
+                y: Math.random() * h,
+                l: Math.random() * 10 + 10,
+                s: Math.random() * 2 + 3
+            });
+        }
     }
 
-    // 窗口大小改变时调整雨滴数量 pc端
+    function draw() {
+        ctx.clearRect(0, 0, w, h);
+        ctx.strokeStyle = 'rgba(174,194,224,0.6)';
+        ctx.lineWidth = 1.5;
+        ctx.lineCap = 'round';
+
+        ctx.beginPath();
+        for (var i = 0; i < drops.length; i++) {
+            var d = drops[i];
+            ctx.moveTo(d.x, d.y);
+            ctx.lineTo(d.x, d.y + d.l);
+            
+            d.y += d.s;
+
+            if (d.y > h) {
+                d.y = -d.l;
+                d.x = Math.random() * w;
+                d.s = Math.random() * 2 + 3;
+            }
+        }
+        ctx.stroke();
+        animationId = requestAnimationFrame(draw);
+    }
+
+    init();
+    draw();
+
+    var resizeTimeout;
     window.addEventListener('resize', function() {
-    
-    
-        const newCount = Math.floor(window.innerWidth * window.innerHeight / 7000);
-        
-        
-        const currentCount = rainContainer.childElementCount;
-        
-        if (newCount > currentCount) {
-            for (let i = 0; i < newCount - currentCount; i++) {
-                createRaindrop(rainContainer);
-            }
-        } else if (newCount < currentCount) {
-            for (let i = 0; i < currentCount - newCount; i++) {
-                if (rainContainer.firstChild) {
-                    rainContainer.removeChild(rainContainer.firstChild);
-                }
-            }
-        }
+        if (resizeTimeout) clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(function() {
+            cancelAnimationFrame(animationId);
+            init();
+            draw();
+        }, 200);
     });
-}
-
-// 创建单个雨滴
-function createRaindrop(container) {
-    const raindrop = document.createElement('div');
-    raindrop.style.position = 'absolute';
-    raindrop.style.width = Math.random() * 3 + 0.5 + 'px';
-    raindrop.style.height = Math.random() * 20 + 10 + 'px';
-    raindrop.style.backgroundColor = 'rgba(174, 194, 224, ' + (Math.random() * 0.5 + 0.3) + ')';
-    raindrop.style.left = Math.random() * 100 + '%';
-    raindrop.style.top = -20 + 'px';
-    raindrop.style.borderRadius = '0 0 3px 3px';
-    
-    // 雨滴动画
-    const animationDuration = Math.random() * 1 + 0.5;
-    raindrop.style.animation = `rain-fall ${animationDuration}s linear infinite`;
-    raindrop.style.animationDelay = Math.random() * 2 + 's';
-    
-    // 添加到容器
-    container.appendChild(raindrop);
-}
-
-// 定义雨滴下落动画
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes rain-fall {
-        0% {
-            transform: translateY(-20px) translateX(0);
-            opacity: 1;
-        }
-        70% {
-            opacity: 0.8;
-        }
-        100% {
-            transform: translateY(${window.innerHeight + 20}px) translateX(${Math.random() * 50 - 25}px);
-            opacity: 0;
-        }
-    }
-`;
-document.head.appendChild(style);
-
-// 初始化下雨效果
-createRainEffect();
+})();
