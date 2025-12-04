@@ -15,7 +15,7 @@
         canvas.width = w;
         canvas.height = h;
         
-        var density = w < 600 ? 15 : 10; 
+        var density = w < 600 ? 30 : 10; 
         maxDrops = Math.floor(w / density);
         
         drops = [];
