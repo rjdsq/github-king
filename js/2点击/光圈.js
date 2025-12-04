@@ -23,7 +23,7 @@ style.textContent = `
     width: 60px;
     height: 60px;
     border-radius: 50%;
-    border: 2px solid transparent;
+    border: 4px solid transparent;
     animation: clickEffectAnimation 0.7s ease-out;
     pointer-events: none;
     box-sizing: border-box;
