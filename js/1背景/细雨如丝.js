@@ -23,7 +23,7 @@
             drops.push({
                 x: Math.random() * w,
                 y: Math.random() * h,
-                l: Math.random() * 10 + 10,
+                l: Math.random() * 10 + 20,
                 s: Math.random() * 2 + 3
             });
         }
