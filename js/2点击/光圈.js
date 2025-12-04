@@ -20,10 +20,10 @@ style.textContent = `
 .clickEffect {
     position: absolute;
     z-index: 999999;
-    width: 80px;
-    height: 80px;
+    width: 70px;
+    height: 70px;
     border-radius: 50%;
-    border: 5px solid transparent;
+    border: 4px solid transparent;
     animation: clickEffectAnimation 0.7s ease-out;
     pointer-events: none;
     box-sizing: border-box;
