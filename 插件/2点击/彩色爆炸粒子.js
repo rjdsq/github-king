@@ -5,7 +5,7 @@
         var particle = document.createElement('div');
         document.body.appendChild(particle);
         
-        var size = Math.floor(Math.random() * 2 + 3);
+        var size = Math.floor(Math.random() * 8 + 8);
         particle.style.width = size + 'px';
         particle.style.height = size + 'px';
         particle.style.background = colors[Math.floor(Math.random() * colors.length)];
