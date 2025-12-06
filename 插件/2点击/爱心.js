@@ -7,7 +7,7 @@
         heart.style.position = 'fixed';
         heart.style.left = x + 'px';
         heart.style.top = y + 'px';
-        heart.style.fontSize = Math.random() * 20 + 35 + 'px';
+        heart.style.fontSize = Math.random() * 40 + 55 + 'px';
         heart.style.color = 'rgb(255, 107, 129)';
         heart.style.userSelect = 'none';
         heart.style.pointerEvents = 'none';
