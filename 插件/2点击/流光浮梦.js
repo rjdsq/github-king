@@ -1,37 +1,33 @@
 /**
- * 插件名称：流光·浮梦
- * 描述：集成了滑动视差与点击涟漪的唯美光效
- * 适配核心：CloudEffectManager V3.0 (虚拟分辨率 + 全能事件代理)
+ * 插件名称：流光·浮梦 (极速版)
+ * 描述：针对高分屏优化的滑动作视差特效，移除耗能渲染，极致流畅。
+ * 适配核心：CloudEffectManager V3.0
  */
 
 (function() {
-    // --- 配置参数 ---
+    // --- 极速版配置 ---
     const CONFIG = {
-        particleCount: 60,        // 氛围粒子数量
-        baseColorHue: 220,        // 基础色相 (220=蓝紫)
-        colorCyclingSpeed: 0.1,   // 颜色流转速度
-        scrollSensitivity: 0.5,   // 滑动视差灵敏度
-        clickBurstCount: 12,      // 点击产生的粒子数
+        particleCount: 35,        // 粒子数量 (适量减少以提升性能)
+        baseColorHue: 210,        // 基础色相 (清透蓝)
+        scrollSensitivity: 0.8,   // 视差灵敏度 (提高一点，让动态更明显)
+        clickBurstCount: 8,       // 点击产生的粒子数
     };
 
-    // --- 初始化画布 ---
     const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { alpha: true }); // 开启透明通道优化
     
-    // 设置全屏 (Iframe 内部已经是 300% 大小，这里只需填充)
-    canvas.style.cssText = 'display:block; width:100%; height:100%;';
+    // 强制使用硬件加速
+    canvas.style.cssText = 'display:block; width:100%; height:100%; transform: translateZ(0); will-change: transform;';
     document.body.appendChild(canvas);
 
     let width, height;
     let particles = [];
     let bursts = [];
     let hue = CONFIG.baseColorHue;
-    
-    // 滚动相关状态
     let lastScrollTop = 0;
     let scrollVelocity = 0;
 
-    // --- 调整尺寸 ---
+    // --- 尺寸同步 ---
     function resize() {
         width = window.innerWidth;
         height = window.innerHeight;
@@ -41,171 +37,154 @@
     window.addEventListener('resize', resize);
     resize();
 
-    // --- 粒子类 (氛围背景) ---
+    // --- 氛围粒子 (背景) ---
     class AmbientParticle {
         constructor() {
-            this.init();
+            this.init(true);
         }
 
-        init() {
+        init(randomY = false) {
             this.x = Math.random() * width;
-            this.y = Math.random() * height;
-            // 基础大小 (配合3.0倍率，这实际上是细腻的小点)
-            this.size = Math.random() * 4 + 1; 
-            this.speedY = Math.random() * 0.5 - 0.25;
-            this.speedX = Math.random() * 0.5 - 0.25;
-            this.life = Math.random() * 0.5 + 0.2; // 透明度
-            this.decay = Math.random() * 0.005 + 0.002; // 呼吸速度
-            this.growing = Math.random() > 0.5;
+            this.y = randomY ? Math.random() * height : (scrollVelocity > 0 ? height + 10 : -10);
+            
+            // 在3倍虚拟分辨率下，粒子尺寸要适当
+            this.size = Math.random() * 3 + 1.5; 
+            this.speedY = Math.random() * 0.4 - 0.2;
+            this.speedX = Math.random() * 0.4 - 0.2;
+            
+            this.alpha = 0; // 初始透明度
+            this.targetAlpha = Math.random() * 0.6 + 0.2; // 目标透明度
+            this.fadeIn = true;
         }
 
         update() {
-            // 基础移动
             this.x += this.speedX;
             this.y += this.speedY;
 
-            // 核心：滑动视差效果
-            // 当主界面滚动时，粒子会根据滚动速度产生反向或同向位移，制造层次感
-            // 越大的粒子受滚动影响越小（模拟远近关系）
-            this.y -= scrollVelocity * CONFIG.scrollSensitivity * (this.size / 2);
+            // 视差核心：根据父级滚动速度移动
+            // 大粒子移动得快，模拟近大远小的 3D 空间感
+            this.y -= scrollVelocity * CONFIG.scrollSensitivity * this.size;
 
-            // 呼吸效果 (透明度变化)
-            if (this.growing) {
-                this.life += this.decay;
-                if (this.life > 0.8) this.growing = false;
-            } else {
-                this.life -= this.decay;
-                if (this.life < 0.2) this.growing = true;
+            // 淡入淡出优化 (代替复杂的呼吸计算)
+            if (this.fadeIn) {
+                this.alpha += 0.01;
+                if (this.alpha >= this.targetAlpha) this.fadeIn = false;
             }
 
-            // 边界检查与重置
-            if (this.x < -10 || this.x > width + 10 || this.y < -10 || this.y > height + 10) {
-                // 如果是因为滚动出了屏幕，重置到另一端
-                if (this.y < -10 && scrollVelocity > 0) this.y = height + 10;
-                else if (this.y > height + 10 && scrollVelocity < 0) this.y = -10;
-                else this.init(); // 随机重置
+            // 边界检查 (屏幕外重置)
+            const margin = 50;
+            if (this.x < -margin || this.x > width + margin || this.y < -margin || this.y > height + margin) {
+                // 如果是因为滚动导致的移出，立即在另一侧生成，保持连续性
+                if (Math.abs(scrollVelocity) > 1) {
+                    this.x = Math.random() * width;
+                    this.y = scrollVelocity > 0 ? height + margin : -margin;
+                } else {
+                    this.init(true);
+                }
             }
         }
 
         draw() {
+            // 性能优化：不绘制肉眼不可见的粒子
+            if (this.alpha <= 0.01) return;
+
             ctx.beginPath();
             ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-            // 使用 HSLA 颜色，颜色随时间流转
-            ctx.fillStyle = `hsla(${hue}, 70%, 65%, ${this.life})`;
+            // 直接填充颜色，不使用 shadowBlur
+            ctx.fillStyle = `hsla(${hue}, 80%, 70%, ${this.alpha})`;
             ctx.fill();
-            
-            // 添加柔光晕
-            ctx.shadowBlur = this.size * 2;
-            ctx.shadowColor = `hsla(${hue}, 70%, 65%, ${this.life})`;
         }
     }
 
-    // --- 爆发粒子类 (点击交互) ---
+    // --- 爆发粒子 (交互) ---
     class BurstParticle {
         constructor(x, y) {
             this.x = x;
             this.y = y;
             const angle = Math.random() * Math.PI * 2;
-            const speed = Math.random() * 5 + 2; // 爆发速度
+            const speed = Math.random() * 8 + 3;
             this.vx = Math.cos(angle) * speed;
             this.vy = Math.sin(angle) * speed;
-            this.size = Math.random() * 6 + 2;
-            this.life = 1; // 完整生命周期
-            this.color = hue + Math.random() * 40 - 20; // 稍微偏色
+            this.size = Math.random() * 5 + 2;
+            this.life = 1.0;
+            // 交互粒子的颜色稍微亮一点
+            this.color = hue + 40; 
         }
 
         update() {
             this.x += this.vx;
             this.y += this.vy;
-            this.vx *= 0.95; // 摩擦力
-            this.vy *= 0.95;
-            this.size *= 0.96; // 变小
-            this.life -= 0.03; // 消失
+            this.vx *= 0.92; // 快速摩擦力，让爆发感更强
+            this.vy *= 0.92;
+            this.size *= 0.94;
+            this.life -= 0.04;
         }
 
         draw() {
-            ctx.save();
-            ctx.globalAlpha = this.life;
+            if (this.life <= 0) return;
             ctx.beginPath();
             ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-            ctx.fillStyle = `hsl(${this.color}, 80%, 70%)`;
+            ctx.fillStyle = `hsla(${this.color}, 90%, 60%, ${this.life})`;
             ctx.fill();
-            ctx.restore();
         }
     }
 
-    // --- 初始化氛围粒子 ---
+    // --- 初始化 ---
     for (let i = 0; i < CONFIG.particleCount; i++) {
         particles.push(new AmbientParticle());
     }
 
-    // --- 核心交互逻辑 ---
-
-    // 1. 监听父级滚动 (CloudEffectManager 特有功能)
-    // 这里的 'parentScroll' 是由管理器合成并分发的自定义事件
+    // --- 事件监听 (保持原有的智能逻辑) ---
     window.addEventListener('parentScroll', (e) => {
         const scrollTop = e.detail.scrollTop;
-        // 计算滚动速度 (当前位置 - 上次位置)
-        // 限制最大速度防止粒子瞬移
-        scrollVelocity = Math.max(-20, Math.min(20, scrollTop - lastScrollTop));
+        const delta = scrollTop - lastScrollTop;
+        // 限制最大速度，防止滑动过快时粒子瞬移
+        scrollVelocity = Math.max(-30, Math.min(30, delta));
         lastScrollTop = scrollTop;
     });
 
-    // 2. 监听点击/触摸 (管理器已将坐标转换为 Iframe 内部坐标)
     const handleInteraction = (e) => {
-        // 创建点击涟漪效果
+        // 限制同时存在的爆发粒子总数，防止连点卡顿
+        if (bursts.length > 40) bursts.splice(0, 10);
+        
         for (let i = 0; i < CONFIG.clickBurstCount; i++) {
             bursts.push(new BurstParticle(e.clientX, e.clientY));
         }
-        
-        // 点击时颜色突变一下，增加动感
-        hue += 30;
     };
 
     window.addEventListener('click', handleInteraction);
-    // 同时也支持原生的 mousedown 以获得更快的响应
     window.addEventListener('mousedown', handleInteraction);
 
-    // --- 动画循环 ---
+    // --- 渲染循环 ---
     function animate() {
-        // 拖尾效果：不完全清除画布，而是覆盖一层半透明背景
-        // 这会让移动的粒子产生漂亮的尾迹
-        ctx.fillStyle = 'rgba(10, 15, 30, 0.2)'; // 深色背景适配
-        // 如果是亮色模式适配 (可选)
-        // ctx.fillStyle = 'rgba(255, 255, 255, 0.2)'; 
-        
-        // 为了支持透明背景（混合模式），我们这里使用 clearRect
-        // 如果想要拖尾，可以改用 fillRect 覆盖
+        // 性能优化关键：完全清除画布，而不是覆盖半透明层
+        // 虽然没了长拖尾，但性能提升巨大，且画面更干净
         ctx.clearRect(0, 0, width, height);
 
-        // 颜色流转
-        hue += CONFIG.colorCyclingSpeed;
-        if (hue > 360) hue = 0;
-
-        // 滚动速度衰减 (模拟惯性停止)
-        scrollVelocity *= 0.9;
+        // 颜色缓慢流转
+        hue += 0.2;
+        
+        // 滚动惯性衰减
+        scrollVelocity *= 0.92;
         if (Math.abs(scrollVelocity) < 0.1) scrollVelocity = 0;
 
-        // 绘制混合模式 (让光效叠加更亮)
-        ctx.globalCompositeOperation = 'lighter';
-
-        // 更新氛围粒子
-        particles.forEach(p => {
+        // 绘制背景粒子
+        for (let i = 0; i < particles.length; i++) {
+            const p = particles[i];
             p.update();
             p.draw();
-        });
+        }
 
-        // 更新爆发粒子
+        // 绘制交互粒子 (倒序循环以便安全删除)
         for (let i = bursts.length - 1; i >= 0; i--) {
             const b = bursts[i];
             b.update();
             b.draw();
-            if (b.life <= 0) {
+            if (b.life <= 0 || b.size < 0.5) {
                 bursts.splice(i, 1);
             }
         }
 
-        ctx.globalCompositeOperation = 'source-over';
         requestAnimationFrame(animate);
     }
 
