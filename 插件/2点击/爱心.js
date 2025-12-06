@@ -20,7 +20,7 @@
         var duration = 1000;
         var initialX = x;
         var initialY = y;
-        var xOffset = Math.random() * 40 - 20;
+        var xOffset = Math.random() * 20 - 10;
         
         function animate(timestamp) {
             if (!startTime) startTime = timestamp;
