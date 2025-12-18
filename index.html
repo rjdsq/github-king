@@ -1,3 +1,5 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -5263,108 +5265,121 @@ async function editFile(file) {
         const found = state.files.find(f => f.path === file.path);
         if (found) currentLatestFile = found;
     }
-    const smartSha = UpdatedFilesManager.get(currentLatestFile.path);
-    let targetSha = currentLatestFile.sha;
-    if (smartSha && smartSha !== targetSha) {
-        targetSha = smartSha;
-        currentLatestFile.sha = targetSha;
-    }
+
     state.editingFile = currentLatestFile;
-    el.editFileName.textContent = `${currentLatestFile.name}`;
+    el.editFileName.textContent = currentLatestFile.name;
     showEditStatus('', '');
     showEditModal();
-    el.editorOverlay.classList.add('show');
-    if (!state.user && localStorage.getItem('cached_user_login')) {
-        state.user = {
-            login: localStorage.getItem('cached_user_login')
-        };
-    }
-    if (!state.viewingOwner && state.currentRepo) {
-        state.viewingOwner = state.currentRepo.split('/')[0];
-    }
-    const isOwner = state.user && state.viewingOwner &&
-        (state.viewingOwner.toLowerCase() === state.user.login.toLowerCase());
-    el.saveEdit.classList.toggle('hidden', !isOwner);
-    el.revertEditBtn.classList.toggle('hidden', !isOwner);
+    
+    // UI 初始化
+    el.saveEdit.classList.toggle('hidden', false);
+    el.revertEditBtn.classList.toggle('hidden', false);
     el.saveEdit.disabled = false;
     el.revertEditBtn.disabled = true;
     el.saveEdit.style.opacity = '0.6';
+    el.editorOverlay.classList.add('show');
+
     try {
         await initAceEditor();
         adjustEditorDimensions();
-        const isLight = document.body.classList.contains('light-theme');
-        aceEditorInstance.setTheme(isLight ? 'ace/theme/chrome' : 'ace/theme/twilight');
+        updateEditorTheme();
+        
         aceEditorInstance.setReadOnly(true);
-        aceEditorInstance.setValue('加载中...', -1);
+        aceEditorInstance.setValue('正在通过加速通道加载...', -1);
+
         let content = '';
-        if (typeof recentlySavedCache !== 'undefined') {
-            const recentData = recentlySavedCache.get(currentLatestFile.path);
-            if (recentData && (Date.now() - recentData.timestamp < 60000) && recentData.sha === targetSha) {
-                content = recentData.content;
-                state.fileSha = recentData.sha;
-            }
-        }
-        if (!content) {
-            const immutableCacheKey = `file_content_${targetSha}`;
+        let targetSha = currentLatestFile.sha;
+
+        // 1. 尝试从 IndexedDB 读取缓存
+        if (targetSha) {
+            const cacheKey = `file_content_${targetSha}`;
             try {
-                const cachedContent = await SimpleDB.get(immutableCacheKey);
+                const cachedContent = await SimpleDB.get(cacheKey);
                 if (cachedContent) {
                     content = cachedContent;
                     state.fileSha = targetSha;
                 }
             } catch (e) {}
         }
-        if (content) {
-            state.originalContent = content;
-            const mode = getAceMode(currentLatestFile.name);
-            aceEditorInstance.session.setMode(mode);
-            aceEditorInstance.setReadOnly(!isOwner);
-            aceEditorInstance.setValue(content, -1);
-            aceEditorInstance.session.getUndoManager().reset();
-            aceEditorInstance.off('change');
-            aceEditorInstance.on('change', checkContentChanges);
-            checkContentChanges();
-            el.editorOverlay.classList.remove('show');
-            setTimeout(() => {
-                aceEditorInstance.resize(true);
-                aceEditorInstance.renderer.updateFull();
-            }, 50);
-            performSmartSilentUpdate(currentLatestFile, content);
-        } else {
-            const res = await fetch(`https://api.github.com/repos/${state.currentRepo}/contents/${currentLatestFile.path}?ref=${state.currentBranch}`, {
-                headers: {
-                    'Authorization': `token ${state.token}`,
-                    'User-Agent': 'Mozilla/5.0'
+
+        // 2. 如果缓存没有，走代理下载 Raw 文件
+        if (!content) {
+            const [owner, repo] = state.currentRepo.split('/');
+            const branch = state.currentBranch || 'main';
+            // 手动构建 Raw 链接，不依赖 API
+            const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${currentLatestFile.path}`;
+            // 关键：使用代理函数获取加速链接
+            const fetchUrl = typeof getProxiedUrl === 'function' ? getProxiedUrl(rawUrl) : rawUrl;
+
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 15000); 
+                
+                const res = await fetch(fetchUrl, { 
+                    cache: 'no-store',
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+
+                if (res.ok) {
+                    content = await res.text();
+                    
+                    // 尝试异步获取最新 SHA（为了保存做准备），不阻塞显示
+                    fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${currentLatestFile.path}?ref=${branch}`, {
+                        headers: { 'Authorization': `token ${state.token}` }
+                    }).then(r => r.json()).then(d => {
+                        if(d.sha) state.fileSha = d.sha;
+                    }).catch(() => {});
+
+                } else {
+                    throw new Error(`HTTP ${res.status}`);
                 }
-            });
-            if (!res.ok) throw new Error((await res.json()).message || '加载文件失败');
-            const data = await res.json();
-            content = decodeURIComponent(escape(atob(data.content)));
-            state.fileSha = data.sha;
-            UpdatedFilesManager.set(currentLatestFile.path, data.sha);
-            const immutableCacheKey = `file_content_${data.sha}`;
-            await SimpleDB.set(immutableCacheKey, content);
-            state.originalContent = content;
-            const mode = getAceMode(currentLatestFile.name);
-            aceEditorInstance.session.setMode(mode);
-            aceEditorInstance.setReadOnly(!isOwner);
-            aceEditorInstance.setValue(content, -1);
-            aceEditorInstance.session.getUndoManager().reset();
-            aceEditorInstance.off('change');
-            aceEditorInstance.on('change', checkContentChanges);
-            checkContentChanges();
-            el.editorOverlay.classList.remove('show');
-            if (state.files) {
-                const idx = state.files.findIndex(f => f.path === currentLatestFile.path);
-                if (idx !== -1) {
-                    state.files[idx].sha = data.sha;
-                    state.files[idx].size = data.size;
-                }
+            } catch (err) {
+                // 3. 降级方案：如果代理下载失败，尝试原始 API (虽然慢，但作为保底)
+                const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${currentLatestFile.path}?ref=${branch}`;
+                const apiRes = await fetch(apiUrl, {
+                    headers: { 'Authorization': `token ${state.token}` }
+                });
+                if (!apiRes.ok) throw new Error('加载失败，请检查网络');
+                const apiData = await apiRes.json();
+                content = decodeURIComponent(escape(atob(apiData.content)));
+                state.fileSha = apiData.sha;
             }
         }
+
+        // 渲染内容
+        state.originalContent = content;
+        if (!state.fileSha) state.fileSha = targetSha; 
+
+        // 写入缓存，供下次秒开
+        if (state.fileSha) {
+            const cacheKey = `file_content_${state.fileSha}`;
+            SimpleDB.set(cacheKey, content);
+        }
+
+        const mode = getAceMode(currentLatestFile.name);
+        aceEditorInstance.session.setMode(mode);
+        
+        // 判断权限
+        const isOwner = state.user && state.viewingOwner && (state.viewingOwner.toLowerCase() === state.user.login.toLowerCase());
+        aceEditorInstance.setReadOnly(!isOwner);
+        
+        aceEditorInstance.setValue(content, -1);
+        aceEditorInstance.session.getUndoManager().reset();
+        
+        aceEditorInstance.off('change');
+        aceEditorInstance.on('change', checkContentChanges);
+        checkContentChanges();
+
     } catch (e) {
-        el.editorOverlay.classList.remove('show');
+        aceEditorInstance.setValue(`加载失败: ${e.message}`, -1);
         showEditStatus(`错误：${e.message}`, 'error');
+    } finally {
+        el.editorOverlay.classList.remove('show');
+        if (aceEditorInstance) {
+            aceEditorInstance.resize(true);
+        }
     }
 }
 
@@ -5518,7 +5533,7 @@ function checkContentChanges() {
 
 async function saveEditedFile() {
     if (!state.editingFile || !aceEditorInstance) {
-        showToast('编辑器状态异常，请重新打开文件', 'error');
+        showToast('编辑器状态异常', 'error');
         return;
     }
     const currentContent = aceEditorInstance.getValue();
@@ -5526,30 +5541,48 @@ async function saveEditedFile() {
         showToast('文件未发生修改');
         return;
     }
-    el.editorOverlay.classList.add('show');
+
     const saveBtn = el.saveEdit;
     saveBtn.disabled = true;
-    saveBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
+    saveBtn.innerHTML = '保存中 <i class="fa fa-spinner fa-spin"></i>';
+    el.editorOverlay.classList.add('show');
+
     try {
         const [owner, repo] = state.currentRepo.split('/');
+        // 必须使用 UTF-8 安全的 Base64 编码
         const encodedContent = btoa(unescape(encodeURIComponent(currentContent)));
         const url = `https://api.github.com/repos/${owner}/${repo}/contents/${state.editingFile.path}`;
+        
         const requestBody = {
             message: `Update ${state.editingFile.name}`,
             content: encodedContent,
-            sha: state.fileSha,
+            sha: state.fileSha, // 必须携带上一次读取到的 SHA
             branch: state.currentBranch
         };
+
+        // 设置 30秒 超时，避免无限等待
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000);
+
         let res = await fetch(url, {
             method: 'PUT',
             headers: {
                 'Authorization': `token ${state.token}`,
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(requestBody)
+            body: JSON.stringify(requestBody),
+            signal: controller.signal
         });
+        
+        clearTimeout(timeoutId);
+
+        // 处理 SHA 冲突 (409 Conflict)
         if (res.status === 409) {
-            const latestRes = await fetch(url + `?ref=${state.currentBranch}`, { headers: { 'Authorization': `token ${state.token}` } });
+            showToast('版本冲突，正在尝试合并...', 'info');
+            // 获取最新 SHA 再次尝试
+            const latestRes = await fetch(url + `?ref=${state.currentBranch}`, { 
+                headers: { 'Authorization': `token ${state.token}` } 
+            });
             if (latestRes.ok) {
                 const latest = await latestRes.json();
                 requestBody.sha = latest.sha;
@@ -5560,37 +5593,48 @@ async function saveEditedFile() {
                 });
             }
         }
+
         if (!res.ok) {
             const errData = await res.json().catch(() => ({}));
-            throw new Error(errData.message || '保存失败');
+            throw new Error(errData.message || `保存失败 HTTP ${res.status}`);
         }
+
         const result = await res.json();
+        
+        // 更新内存状态
         state.fileSha = result.content.sha;
         state.originalContent = currentContent;
         state.editingFile.sha = result.content.sha;
+
+        // 1. 更新 IndexedDB 内容缓存
         const cacheKey = `file_content_${result.content.sha}`;
         if (window.SimpleDB) window.SimpleDB.set(cacheKey, currentContent);
-        recentlySavedCache.set(state.editingFile.path, {
-            content: currentContent,
-            timestamp: Date.now(),
-            sha: result.content.sha
+
+        // 2. 核心：调用一致性管理器更新列表缓存
+        // 这确保了你关闭编辑器后，文件列表里的该文件 SHA 和大小是最新的
+        // 从而避免了“保存后列表回滚”的问题
+        await updateGlobalCacheState('add', { // add 逻辑包含 update
+            path: state.editingFile.path,
+            type: 'file',
+            sha: result.content.sha,
+            size: result.content.size,
+            parentPath: state.currentPath
         });
-        if (state.files && state.files.length > 0) {
-            const fileIndex = state.files.findIndex(f => f.path === state.editingFile.path);
-            if (fileIndex !== -1) {
-                state.files[fileIndex].sha = result.content.sha;
-                state.files[fileIndex].size = result.content.size;
-            }
-        }
-        showToast('文件保存成功！', 'success');
+
+        showToast('保存成功！', 'success');
         checkContentChanges();
+
     } catch (e) {
-        showToast(`保存出错：${e.message}`, 'error');
+        let msg = e.message;
+        if (e.name === 'AbortError') msg = '网络超时，保存失败';
+        showToast(msg, 'error');
     } finally {
         el.editorOverlay.classList.remove('show');
         saveBtn.disabled = false;
-        saveBtn.innerHTML = '<i class="fa-solid fa-check"></i> <span>保存</span>';
-        saveBtn.classList.remove('btn-processing');
+        saveBtn.innerHTML = '<i class="fa-solid fa-check"></i>';
+        setTimeout(() => {
+             if(!saveBtn.disabled) saveBtn.innerHTML = '<i class="fa-solid fa-check"></i> <span>保存</span>';
+        }, 2000);
     }
 }
 
