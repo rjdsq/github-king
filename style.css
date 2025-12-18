@@ -5011,7 +5011,6 @@ body.light-theme .btn-icon-sm.danger:hover:not(:disabled) {
 
 
 
-/* --- 侧边栏与遮罩 --- */
 #sideNav {
     position: fixed;
     top: 0;
@@ -5025,11 +5024,14 @@ body.light-theme .btn-icon-sm.danger:hover:not(:disabled) {
     background-color: #111827;
     padding: 1rem 0.8rem;
     transform: translateX(-100%);
-    transition: transform .3s cubic-bezier(0.4, 0, 0.2, 1);
+    visibility: hidden;
+    transition: transform .3s cubic-bezier(0.4, 0, 0.2, 1), visibility 0s linear 0.3s;
 }
 
 #sideNav.open {
     transform: translateX(0);
+    visibility: visible;
+    transition: transform .3s cubic-bezier(0.4, 0, 0.2, 1), visibility 0s linear 0s;
 }
 
 #mainOverlay {
