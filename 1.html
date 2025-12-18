@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>压缩机厂房柜子工具台账</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        h1 { text-align: center; color: #333; }
+        table { width: 85%; margin: 20px auto; border-collapse: collapse; }
+        th, td { border: 1px solid #ccc; padding: 10px; text-align: center; }
+        th { background-color: #f5f5f5; }
+        .btn-container { text-align: center; margin: 20px 0; }
+        button { padding: 12px 24px; background-color: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
+        button:hover { background-color: #1976D2; }
+    </style>
+</head>
+<body>
+    <h1>压缩机厂房柜子工具台账</h1>
+    <div class="btn-container">
+        <button id="exportBtn">导出XLSX表格</button>
+    </div>
+    <table id="toolTable">
+        <thead>
+            <tr>
+                <<th>序号</</th>
+                <<th>名称</</th>
+                <<th>数量</</th>
+                <<th>单位</</th>
+                <<th>备注</</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- 扳手类（常用优先） -->
+            <tr><td>1</td><td>扳手（散件）</td><td>20</td><td>把</td><td>通用散件扳手</td></tr>
+            <tr><td>2</td><td>活动扳手</td><td>7</td><td>把</td><td></td></tr>
+            <tr><td>3</td><td>敲击扳手</td><td>27</td><td>把</td><td></td></tr>
+            <tr><td>4</td><td>超大开口扳手</td><td>1</td><td>把</td><td></td></tr>
+            <tr><td>5</td><td>皮带扳手</td><td>1</td><td>把</td><td></td></tr>
+            <tr><td>6</td><td>扭力扳手</td><td>2</td><td>把</td><td>蓝和粉盒子存放</td></tr>
+            <tr><td>7</td><td>套筒棘轮扳手套装</td><td>1</td><td>箱</td><td>蓝色工具箱存放</td></tr>
+            <!-- 套筒类 -->
+            <tr><td>8</td><td>套筒（盒装）</td><td>1</td><td>盒</td><td>绿色盒子存放</td></tr>
+            <tr><td>9</td><td>套筒（散装）</td><td>61</td><td>个</td><td></td></tr>
+            <!-- 起子/钳类 -->
+            <tr><td>10</td><td>螺丝刀</td><td>6</td><td>把</td><td></td></tr>
+            <tr><td>11</td><td>内六方</td><td>4</td><td>套</td><td></td></tr>
+            <tr><td>12</td><td>弹簧钳</td><td>3</td><td>把</td><td></td></tr>
+            <!-- 敲击/紧固类 -->
+            <tr><td>13</td><td>羊角锤</td><td>1</td><td>把</td><td></td></tr>
+            <tr><td>14</td><td>胶锤</td><td>1</td><td>把</td><td></td></tr>
+            <tr><td>15</td><td>铜棒</td><td>1</td><td>根</td><td></td></tr>
+            <!-- 撬动/修整类 -->
+            <tr><td>16</td><td>铜撬</td><td>1</td><td>根</td><td></td></tr>
+            <tr><td>17</td><td>撬棍</td><td>4</td><td>根</td><td></td></tr>
+            <tr><td>18</td><td>锉刀</td><td>1</td><td>把</td><td></td></tr>
+            <!-- 切割类 -->
+            <tr><td>19</td><td>铁皮剪刀</td><td>2</td><td>把</td><td></td></tr>
+            <tr><td>20</td><td>管钳</td><td>1</td><td>把</td><td></td></tr>
+            <!-- 测量类 -->
+            <tr><td>21</td><td>水平仪</td><td>3</td><td>把</td><td></td></tr>
+            <!-- 安全防护类 -->
+            <tr><td>22</td><td>警示牌</td><td>2</td><td>块</td><td></td></tr>
+            <tr><td>23</td><td>警戒带</td><td>2</td><td>卷</td><td></td></tr>
+            <!-- 吊具类 -->
+            <tr><td>24</td><td>3t吊带</td><td>2</td><td>条</td><td></td></tr>
+            <tr><td>25</td><td>2t吊带</td><td>2</td><td>条</td><td></td></tr>
+        </tbody>
+    </table>
+
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script>
+        document.getElementById('exportBtn').addEventListener('click', function() {
+            const table = document.getElementById('toolTable');
+            const workbook = XLSX.utils.table_to_book(table, { sheet: '工具台账', cellStyles: true });
+            // 强制导出为xlsx格式，避免压缩包问题
+            XLSX.writeFile(workbook, '压缩机厂房柜子工具台账.xlsx', { bookType: 'xlsx', type: 'file' });
+        });
+    </script>
+</body>
+</html>
