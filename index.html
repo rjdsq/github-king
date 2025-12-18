@@ -761,7 +761,6 @@
 </div>
 
 
-
     <div id="apiStatusContent" class="api-status-content"> 
         <!-- 内容动态生成 -->
         <div class="loading-spinner" style="height: auto; padding: 2rem 0;">
@@ -1412,106 +1411,92 @@ const NON_EDITABLE_EXTS = [
 
 
 const ConsistencyManager = {
-    // 将有效期延长至 60 秒，对抗 GitHub API 的缓存延迟
     DURATION: 60000, 
     buffer: [],
 
-    // 辅助：标准化路径（确保末尾有且只有一个 /，根目录为空）
-    normalizeDir(path) {
-        if (!path) return '';
-        return path.endsWith('/') ? path : path + '/';
+    // 核心修复：强力路径标准化，忽略末尾斜杠差异
+    isSameDir(pathA, pathB) {
+        const a = (pathA || '').replace(/\/+$/, '');
+        const b = (pathB || '').replace(/\/+$/, '');
+        return a === b;
     },
 
     add(action) {
-        this.load(); // 先加载最新，防止覆盖
+        this.load();
         this.clean();
         
-        // 如果是重名文件操作，先移除旧记录，避免冲突
-        if (action.file) {
-            this.buffer = this.buffer.filter(item => 
-                !(item.type === action.type && item.file && item.file.path === action.file.path)
-            );
+        // 防重：移除针对同一文件的旧记录
+        const targetPath = action.file ? action.file.path : (action.path || action.oldPath);
+        if (targetPath) {
+            this.buffer = this.buffer.filter(item => {
+                const itemPath = item.file ? item.file.path : (item.path || item.oldPath);
+                return itemPath !== targetPath;
+            });
         }
 
-        this.buffer.push({
-            ...action,
-            timestamp: Date.now()
-        });
+        this.buffer.push({ ...action, timestamp: Date.now() });
         this.save();
     },
 
     clean() {
         const now = Date.now();
-        // 过滤掉超过 60 秒的记录
         this.buffer = this.buffer.filter(item => now - item.timestamp < this.DURATION);
     },
 
     save() {
-        localStorage.setItem('consistency_buffer', JSON.stringify(this.buffer));
+        try {
+            localStorage.setItem('consistency_buffer', JSON.stringify(this.buffer));
+        } catch(e) {}
     },
 
     load() {
         try {
             const saved = JSON.parse(localStorage.getItem('consistency_buffer') || '[]');
             this.buffer = Array.isArray(saved) ? saved : [];
-            this.clean(); // 加载时顺便清理过期数据
         } catch (e) {
             this.buffer = [];
         }
     },
 
-    // 核心逻辑：应用本地补丁到网络数据上
     apply(fileList) {
-        this.load(); // 每次应用前确保读取最新
-        if (this.buffer.length === 0 || !fileList) return fileList;
+        this.load();
+        this.clean();
+        
+        if (this.buffer.length === 0) return fileList || [];
 
-        let result = [...fileList];
-        const currentPath = this.normalizeDir(state.currentPath || '');
+        let result = [...(fileList || [])];
+        const currentPath = state.currentPath || '';
 
         this.buffer.forEach(action => {
-            // 1. 处理删除：强制移除列表中的文件
+            // --- 删除 ---
             if (action.type === 'delete') {
-                result = result.filter(f => 
-                    f.path !== action.path && !f.path.startsWith(action.path + '/')
-                );
+                result = result.filter(f => f.path !== action.path && !f.path.startsWith(action.path + '/'));
             }
-            // 2. 处理新增：强制添加到列表
+            // --- 新增 ---
             else if (action.type === 'add') {
-                const parentPath = this.normalizeDir(action.parentPath || '');
-                // 只有当操作发生在当前目录下时才添加
-                if (parentPath === currentPath) {
-                    // 先防重，如果列表里已经有了（哪怕是旧的），先剔除，用我们最新的覆盖
-                    result = result.filter(f => f.path !== action.file.path);
-                    result.push(action.file);
+                // 只有当当前目录匹配时才插入
+                if (this.isSameDir(action.parentPath, currentPath)) {
+                    result = result.filter(f => f.path !== action.file.path); // 先删旧
+                    result.push(action.file); // 再加新
                 }
             }
-            // 3. 处理重命名：移除旧的，添加新的
+            // --- 重命名 ---
             else if (action.type === 'rename') {
-                // 移除旧路径文件
+                // 1. 在当前视图中移除旧文件
                 result = result.filter(f => f.path !== action.oldPath);
                 
-                // 如果当前目录是新文件的父目录，则添加新文件
-                const newParentPath = this.normalizeDir(action.newParentPath || '');
-                if (newParentPath === currentPath) {
+                // 2. 如果新文件在当前视图，则添加
+                if (this.isSameDir(action.newParentPath, currentPath)) {
                     result = result.filter(f => f.path !== action.newFile.path);
                     result.push(action.newFile);
                 }
             }
         });
 
-        // 重新排序，确保补丁后的列表顺序正确
-        // 这里复用原本的排序逻辑，确保新增文件不会总是跑到底部
-        if (typeof applyFiltersAndSort === 'function') {
-             // 注意：这里我们无法直接调用 applyFiltersAndSort 修改 state，
-             // 所以我们在 fetchFiles 流程中把 result 赋值给 state.files 后会再次排序。
-             // 这里仅返回数据。
-        }
-
         return result;
     }
 };
-
-// 初始化加载
+// 初始化
 ConsistencyManager.load();
 
 
@@ -4266,89 +4251,86 @@ async function uploadFilesInSequence(files, index) {
 
 async function uploadSingleFile(file, index) {
     const MAX_FILE_SIZE_BYTES = 100 * 1024 * 1024;
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         const progressBar = document.querySelector(`.upload-progress[data-index="${index}"]`);
         const statusElement = document.querySelector(`.upload-status[data-index="${index}"]`);
         const percentTextEl = progressBar ? progressBar.querySelector(`.percent-text[data-index="${index}"]`) : null;
         
         if (file.size > MAX_FILE_SIZE_BYTES) {
             if (statusElement) {
-                statusElement.textContent = '文件过大 (>100MB)';
+                statusElement.textContent = `文件过大 (限制100MB)`;
                 statusElement.className = 'upload-status error';
             }
-            resolve(); 
+            showToast(`文件 "${file.name}" 超过100MB官方限制`);
+            reject(new Error('文件过大'));
             return;
         }
         
         if (statusElement) statusElement.textContent = '正在上传...';
+        
         const reader = new FileReader();
         reader.readAsArrayBuffer(file);
         
         reader.onload = async (e) => {
             let progress = 0;
-            const progressTimer = setInterval(() => {
-                if (progress < 90) {
-                    progress += 2;
-                    if (progressBar) progressBar.style.width = `${progress}%`;
-                    if (percentTextEl) percentTextEl.textContent = `${progress}%`;
-                }
-            }, 100);
+            let progressInterval = null;
+            const [owner, repo] = state.currentRepo.split('/');
+            const fileName = file.name;
+            const currentDir = state.currentPath || '';
+            const filePath = currentDir ? `${currentDir}${fileName}` : fileName;
+            
+            const parentPathForCache = currentDir;
 
             try {
-                const [owner, repo] = state.currentRepo.split('/');
-                const filePath = state.currentPath ? `${state.currentPath}${file.name}` : file.name;
-                const contentBase64 = arrayBufferToBase64(e.target.result);
-                const url = `https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`;
+                progressInterval = setInterval(() => {
+                    if (progress < 95) {
+                        progress += 1;
+                        if (progressBar) progressBar.style.width = `${progress}%`;
+                        if (percentTextEl) percentTextEl.textContent = `${progress}%`;
+                    }
+                }, 100);
+
+                const base64String = arrayBufferToBase64(e.target.result);
+                if (!state || !state.currentRepo) throw new Error('未选择仓库');
                 
-                const performUpload = async (sha = null) => {
-                    const body = {
-                        message: `Upload ${file.name}`,
-                        content: contentBase64,
-                        branch: state.currentBranch
-                    };
-                    if (sha) body.sha = sha;
-
-                    const res = await fetch(url, {
-                        method: 'PUT',
-                        headers: { 
-                            'Authorization': `token ${state.token}`, 
-                            'Content-Type': 'application/json',
-                            'User-Agent': 'Mozilla/5.0'
-                        },
-                        body: JSON.stringify(body)
-                    });
-                    
-                    if (!res.ok) {
-                        if (res.status === 409 || res.status === 422) {
-                            throw { status: res.status, isConflict: true };
-                        }
-                        const errData = await res.json().catch(() => ({}));
-                        throw new Error(errData.message || res.statusText);
-                    }
-                    return res.json();
-                };
-
+                let existingFileSha = null;
                 try {
-                    const cachedFile = state.files.find(f => f.name === file.name);
-                    await performUpload(cachedFile ? cachedFile.sha : null);
-                } catch (err) {
-                    if (err.isConflict) {
-                        if (statusElement) statusElement.textContent = '覆盖中...';
-                        const getRes = await fetch(`${url}?ref=${state.currentBranch}`, {
-                            headers: { 'Authorization': `token ${state.token}` }
-                        });
-                        if (getRes.ok) {
-                            const getData = await getRes.json();
-                            await performUpload(getData.sha);
-                        } else {
-                            throw new Error('无法获取文件状态以覆盖');
-                        }
-                    } else {
-                        throw err;
-                    }
-                }
+                    const checkUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${filePath}?ref=${state.currentBranch}`;
+                    const checkRes = await fetch(checkUrl, { headers: { 'Authorization': `token ${state.token}`, 'User-Agent': 'Mozilla/5.0' } });
+                    if (checkRes.ok) existingFileSha = (await checkRes.json()).sha;
+                } catch (e) { console.warn(`无法获取文件SHA: ${e.message}`); }
 
-                clearInterval(progressTimer);
+                const requestBody = {
+                    message: `Upload ${fileName}`,
+                    content: base64String,
+                    branch: state.currentBranch
+                };
+                if (existingFileSha) requestBody.sha = existingFileSha;
+
+                const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`, {
+                    method: 'PUT',
+                    headers: { 'Authorization': `token ${state.token}`, 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0' },
+                    body: JSON.stringify(requestBody),
+                    signal: AbortSignal.timeout(300000)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.message || `上传失败: HTTP ${response.status}`);
+                }
+                
+                const responseData = await response.json();
+
+                await updateGlobalCacheState('add', {
+                    path: filePath,
+                    type: 'blob',
+                    sha: responseData.content ? responseData.content.sha : null,
+                    size: responseData.content ? responseData.content.size : file.size,
+                    parentPath: parentPathForCache 
+                });
+
+                clearInterval(progressInterval);
+                progress = 100;
                 if (progressBar) progressBar.style.width = '100%';
                 if (percentTextEl) percentTextEl.textContent = '100%';
                 if (statusElement) {
@@ -4358,14 +4340,34 @@ async function uploadSingleFile(file, index) {
                 resolve();
 
             } catch (error) {
-                clearInterval(progressTimer);
                 if (statusElement) {
-                    statusElement.textContent = '失败: ' + error.message;
+                    statusElement.textContent = '上传失败';
                     statusElement.className = 'upload-status error';
                 }
-                console.error(error);
-                resolve(); 
+                reject(new Error(`上传失败: ${error.message}`));
+            } finally {
+                if (progressInterval) clearInterval(progressInterval);
+                const itemContainer = statusElement ? statusElement.closest('.upload-item') : null;
+                if (itemContainer && statusElement.classList.contains('success')) {
+                    setTimeout(() => {
+                        itemContainer.style.transition = 'opacity 0.5s, height 0.5s, margin 0.5s, padding 0.5s';
+                        itemContainer.style.opacity = '0';
+                        itemContainer.style.height = '0';
+                        itemContainer.style.margin = '0';
+                        itemContainer.style.padding = '0';
+                        itemContainer.style.overflow = 'hidden';
+                        setTimeout(() => itemContainer.remove(), 500);
+                    }, 1500);
+                }
             }
+        };
+        
+        reader.onerror = () => {
+            if (statusElement) {
+                statusElement.textContent = '文件读取失败';
+                statusElement.className = 'upload-status error';
+            }
+            reject(new Error('文件读取失败'));
         };
     });
 }
@@ -4437,46 +4439,39 @@ async function fetchFiles(forceRefresh = false, showLoader = true) {
     const pathForFetch = state.currentPath;
     let hasRenderedCache = false;
     
-    if (forceRefresh) {
-        if (typeof recentlySavedCache !== 'undefined') {
-            recentlySavedCache.clear();
-        }
-        // 注意：刷新时不要清除 ConsistencyManager，因为网络数据可能依然是脏的
+    if (forceRefresh && typeof recentlySavedCache !== 'undefined') {
+        recentlySavedCache.clear();
     }
 
     if (!forceRefresh) {
         const cacheKey = `${state.currentRepo}:${state.currentBranch}:${pathForFetch}`;
         
-        // 1. 尝试内存缓存
+        // 1. 检查内存
         if (state.fileCache.has(cacheKey)) {
             let files = state.fileCache.get(cacheKey);
-            // 应用补丁
+            // 双重保险：读取缓存时必须再次应用补丁
             files = ConsistencyManager.apply(files);
-            
             state.files = files;
             applyFiltersAndSort();
             renderFileList();
             hasRenderedCache = true;
         } else {
-            // 2. 尝试 DB 缓存
+            // 2. 检查 DB
             try {
                 const cachedData = await SimpleDB.get(cacheKey);
                 if (cachedData && Array.isArray(cachedData.data)) {
-                    // 应用补丁
-                    let files = ConsistencyManager.apply(cachedData.data);
-                    
+                    let files = ConsistencyManager.apply(cachedData.data); // 应用补丁
                     state.files = files;
+                    // 回填内存
                     state.fileCache.set(cacheKey, files);
                     applyFiltersAndSort();
                     renderFileList();
                     hasRenderedCache = true;
                 } else if (state.repoTreeCache) {
-                    // 3. 尝试 Tree 缓存
+                    // 3. 检查 Tree
                     const localFiles = getFilesFromLocalTree(pathForFetch);
                     if (localFiles) {
-                        // 应用补丁
-                        state.files = ConsistencyManager.apply(localFiles);
-                        
+                        state.files = ConsistencyManager.apply(localFiles); // 应用补丁
                         applyFiltersAndSort();
                         renderFileList();
                         hasRenderedCache = true;
@@ -4520,20 +4515,21 @@ async function fetchFilesFromNetwork(isInitialLoad = false, pathForFetch, isSile
     currentFetchController = new AbortController();
     const signal = currentFetchController.signal;
 
+    // 确保读取到最新的本地操作记录
+    ConsistencyManager.load();
+
     try {
         const [owner, repo] = state.currentRepo.split('/');
         const timestamp = Date.now();
         const url = `https://api.github.com/repos/${owner}/${repo}/contents/${pathForFetch}?ref=${state.currentBranch}&t=${timestamp}`;
         const cacheKey = `${state.currentRepo}:${state.currentBranch}:${pathForFetch}`;
         
-        // 如果有本地待同步操作，则不使用 ETag 缓存，强制拉取新数据进行比对
         let etag = null;
+        // 如果有本地未同步的操作，不使用 ETag，强制拉取新数据进行合并
         if (ConsistencyManager.buffer.length === 0) { 
             try {
                 const cachedRecord = await SimpleDB.get(cacheKey);
-                if (cachedRecord && cachedRecord.etag) {
-                    etag = cachedRecord.etag;
-                }
+                if (cachedRecord && cachedRecord.etag) etag = cachedRecord.etag;
             } catch (e) {}
         }
 
@@ -4541,21 +4537,18 @@ async function fetchFilesFromNetwork(isInitialLoad = false, pathForFetch, isSile
             'Authorization': `token ${state.token}`,
             'User-Agent': 'Mozilla/5.0'
         };
-        if (etag) {
-            headers['If-None-Match'] = etag;
-        }
+        if (etag) headers['If-None-Match'] = etag;
 
         const res = await fetch(url, {
             headers: headers,
-            cache: 'no-store', // 强制不使用浏览器缓存
+            cache: 'no-store', // 强制网络请求
             signal: signal
         });
 
         if (res.status === 304) {
-            // 即使是 304，也要应用本地补丁，因为本地可能刚删除了文件但 ETag 没变
+            // 即使 304，也要检查是否有本地补丁需要应用
             if (state.files) {
                 const patchedFiles = ConsistencyManager.apply(state.files);
-                // 只有当补丁导致数据变化时才重新渲染
                 if (JSON.stringify(patchedFiles) !== JSON.stringify(state.files)) {
                     state.files = patchedFiles;
                     applyFiltersAndSort();
@@ -4567,6 +4560,14 @@ async function fetchFilesFromNetwork(isInitialLoad = false, pathForFetch, isSile
 
         if (!res.ok) {
             if (res.status === 404) {
+                // 处理空文件夹刚创建的情况
+                let patchedFiles = ConsistencyManager.apply([]); 
+                if (patchedFiles.length > 0 && pathForFetch === state.currentPath) {
+                    state.files = patchedFiles;
+                    applyFiltersAndSort();
+                    renderFileList();
+                    return;
+                }
                 if (pathForFetch === state.currentPath) {
                     state.files = [];
                     applyFiltersAndSort();
@@ -4583,22 +4584,20 @@ async function fetchFilesFromNetwork(isInitialLoad = false, pathForFetch, isSile
         
         let fetchedFiles = Array.isArray(rawData) ? rawData : [];
         
-        // 【关键步骤】应用本地的一致性补丁
+        // 【核心】: 无论 GitHub 返回什么，强制合并本地的“真理”数据
         fetchedFiles = ConsistencyManager.apply(fetchedFiles);
 
-        // 图片预处理逻辑
+        // 图片预处理
         fetchedFiles = fetchedFiles.map(file => {
             const isImage = IMAGE_EXTS.includes(file.name.split('.').pop()?.toLowerCase());
-            if (isImage) {
-                return { ...file, isImageLoaded: false };
-            }
+            if (isImage) return { ...file, isImageLoaded: false };
             return file;
         });
 
-        // 存入内存缓存
+        // 存入内存
         state.fileCache.set(cacheKey, [...fetchedFiles]);
         
-        // 存入 IndexedDB
+        // 存入 DB
         try {
             await SimpleDB.set(cacheKey, {
                 data: [...fetchedFiles],
@@ -4609,13 +4608,10 @@ async function fetchFilesFromNetwork(isInitialLoad = false, pathForFetch, isSile
 
         if (pathForFetch === state.currentPath) {
             state.files = fetchedFiles;
-            // 清理旧的编辑缓存
             if (typeof recentlySavedCache !== 'undefined') {
                 for (const file of fetchedFiles) {
                     const cached = recentlySavedCache.get(file.path);
-                    if (cached && cached.sha !== file.sha) {
-                        recentlySavedCache.delete(file.path);
-                    }
+                    if (cached && cached.sha !== file.sha) recentlySavedCache.delete(file.path);
                 }
             }
             applyFiltersAndSort();
@@ -4626,13 +4622,20 @@ async function fetchFilesFromNetwork(isInitialLoad = false, pathForFetch, isSile
     } catch (err) {
         if (err.name === 'AbortError') return;
         if (pathForFetch === state.currentPath && !isSilentUpdate) {
-            showToast('加载文件失败: ' + err.message);
+            // 出错时尝试显示本地数据
+            const patchedFiles = ConsistencyManager.apply([]);
+            if (patchedFiles.length > 0) {
+                state.files = patchedFiles;
+                applyFiltersAndSort();
+                renderFileList();
+            } else {
+                showToast('加载文件失败: ' + err.message);
+            }
         }
     } finally {
         if (currentFetchController && currentFetchController.signal === signal) {
             currentFetchController = null;
         }
-        // 移除加载动画
         if (pathForFetch === state.currentPath) {
             const spinner = document.querySelector('#fileList .spinner');
             if (spinner) {
@@ -5991,46 +5994,55 @@ const hideContextMenu = () => {
 
 async function updateGlobalCacheState(action, itemData) {
     const { path, newPath, type, sha, size, parentPath } = itemData;
-    
-    // === 核心修改：立即注册到一致性管理器 ===
+    const [owner, repo] = state.currentRepo.split('/');
+    const branch = state.currentBranch;
+    const now = new Date().toISOString();
+
+    // 辅助构造完整的 Mock 文件对象
+    const createMockFile = (filePath, fileType, fileSha, fileSize) => {
+        const fileName = filePath.split('/').pop();
+        return {
+            name: fileName,
+            path: filePath,
+            type: fileType === 'tree' ? 'dir' : 'file',
+            sha: fileSha || 'pending-' + Date.now(), // 临时SHA
+            size: fileSize || 0,
+            url: `https://api.github.com/repos/${owner}/${repo}/contents/${filePath}?ref=${branch}`,
+            html_url: `https://github.com/${owner}/${repo}/blob/${branch}/${filePath}`,
+            git_url: `https://api.github.com/repos/${owner}/${repo}/git/blobs/${fileSha}`,
+            download_url: `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${filePath}`,
+            last_modified: now // 伪造最后修改时间，方便排序
+        };
+    };
+
     if (action === 'delete') {
         ConsistencyManager.add({ type: 'delete', path: path });
-    } else if (action === 'add') {
-        const fileName = path.split('/').pop();
+    } 
+    else if (action === 'add') {
+        const mockFile = createMockFile(path, type, sha, size);
         ConsistencyManager.add({ 
             type: 'add', 
-            file: { 
-                name: fileName, 
-                path: path, 
-                type: type === 'tree' ? 'dir' : 'file', 
-                sha: sha, 
-                size: size 
-            },
+            file: mockFile,
             parentPath: parentPath 
         });
-    } else if (action === 'rename') {
+    } 
+    else if (action === 'rename') {
         const newName = newPath.split('/').pop();
-        // 计算新文件的父目录
-        let newParent = newPath.includes('/') ? newPath.substring(0, newPath.lastIndexOf('/') + 1) : '';
-        // 处理 ConsistencyManager.normalizeDir 需要的格式（带/）
+        let newParent = newPath.includes('/') ? newPath.substring(0, newPath.lastIndexOf('/')) : '';
+        // 保持父路径格式一致性（带/）
         if (newParent && !newParent.endsWith('/')) newParent += '/';
 
+        const mockFile = createMockFile(newPath, type, sha, size);
+        
         ConsistencyManager.add({ 
             type: 'rename', 
             oldPath: path, 
             newParentPath: newParent,
-            newFile: { 
-                name: newName, 
-                path: newPath, 
-                type: type === 'tree' ? 'dir' : 'file', 
-                sha: sha, 
-                size: size 
-            }
+            newFile: mockFile
         });
     }
-    // ==========================================
 
-    // 原有的 Tree Cache 更新逻辑保留，用于加速 Tree 模式
+    // 更新 Tree Cache (用于 Tree 模式加速)
     if (state.repoTreeCache) {
         const isDir = type === 'dir' || type === 'tree';
         
@@ -6055,8 +6067,10 @@ async function updateGlobalCacheState(action, itemData) {
                     size: size || 0,
                     url: '' 
                 });
-                // 简单排序
-                state.repoTreeCache.sort((a, b) => a.path.localeCompare(b.path));
+                state.repoTreeCache.sort((a, b) => {
+                    if (a.type !== b.type) return a.type === 'tree' ? -1 : 1;
+                    return a.path.localeCompare(b.path);
+                });
             }
         }
         else if (action === 'rename') {
@@ -6077,7 +6091,7 @@ async function updateGlobalCacheState(action, itemData) {
         } catch (e) {}
     }
 
-    // 更新当前列表视图缓存（父目录缓存）
+    // 更新当前列表视图缓存（内存 + DB）
     let targetPath = action === 'rename' ? itemData.path : (itemData.path || '');
     let computedParentPath = '';
     
@@ -6089,10 +6103,9 @@ async function updateGlobalCacheState(action, itemData) {
         computedParentPath = lastSlash > -1 ? targetPath.substring(0, lastSlash + 1) : '';
     }
 
-    // 调用原来的 helper 更新内存和 DB
     await modifyParentCache(computedParentPath, action, itemData);
 
-    // 清理子目录缓存（递归删除）
+    // 递归清理子目录缓存
     if (action === 'rename' || action === 'delete') {
         const cacheKeyPrefix = `${state.currentRepo}:${state.currentBranch}:`;
         let cleanupPath = itemData.path;
@@ -6112,8 +6125,8 @@ async function updateGlobalCacheState(action, itemData) {
 async function modifyParentCache(parentPath, action, itemData) {
     const cacheKey = `${state.currentRepo}:${state.currentBranch}:${parentPath}`;
     
+    // 1. 获取现有列表 (优先内存，其次DB)
     let currentList = null;
-    
     if (state.fileCache.has(cacheKey)) {
         currentList = state.fileCache.get(cacheKey);
     } else {
@@ -6125,57 +6138,66 @@ async function modifyParentCache(parentPath, action, itemData) {
         } catch (e) {}
     }
 
+    // 如果还没有缓存，就不强行制造了，等下次 fetchFiles 自动处理
     if (!currentList) return;
 
-    const listCopy = [...currentList];
-    const { path, newPath, name, type, sha, size } = itemData;
+    let listCopy = [...currentList];
+    const { path, newPath, sha, size, type } = itemData;
     
-    const itemName = name || path.split('/').pop();
-
+    // 根据 itemData 构造文件对象 (如果在 add/rename 场景下没有传完整file对象)
+    // 这里我们尽量复用 updateGlobalCacheState 传来的完整信息，如果不够就简易构造
+    const fileName = (newPath || path).split('/').pop();
+    
     if (action === 'delete') {
-        const index = listCopy.findIndex(f => f.path === path);
-        if (index > -1) {
-            listCopy.splice(index, 1);
-        }
+        listCopy = listCopy.filter(f => f.path !== path);
     } 
     else if (action === 'add') {
         const exists = listCopy.some(f => f.path === path);
         if (!exists) {
+            // 构造一个尽量完整的缓存对象，防止UI报错
+            const [owner, repo] = state.currentRepo.split('/');
+            const branch = state.currentBranch;
             listCopy.push({
-                name: itemName,
+                name: fileName,
                 path: path,
-                type: type === 'tree' ? 'dir' : (type || 'file'),
-                sha: sha,
-                size: size,
-                download_url: null, 
-                html_url: `https://github.com/${state.currentRepo}/blob/${state.currentBranch}/${path}`
+                type: type === 'tree' ? 'dir' : 'file',
+                sha: sha || 'temp-sha',
+                size: size || 0,
+                html_url: `https://github.com/${owner}/${repo}/blob/${branch}/${path}`,
+                url: `https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${branch}`,
+                download_url: `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${path}`,
+                last_modified: new Date().toISOString()
             });
         }
     } 
     else if (action === 'rename') {
         const index = listCopy.findIndex(f => f.path === path);
         if (index > -1) {
-            const newItemName = newPath.split('/').pop();
+            // 保留原有属性，仅修改关键路径信息
             listCopy[index] = {
                 ...listCopy[index],
-                name: newItemName,
+                name: fileName,
                 path: newPath,
-                sha: sha || listCopy[index].sha 
+                sha: sha || listCopy[index].sha,
+                last_modified: new Date().toISOString()
             };
         }
     }
 
+    // 2. 立即回写内存
     state.fileCache.set(cacheKey, listCopy);
     
+    // 3. 立即回写 IndexedDB (持久化)
     try {
         const existingRecord = await SimpleDB.get(cacheKey);
         await SimpleDB.set(cacheKey, {
             data: listCopy,
-            etag: existingRecord ? existingRecord.etag : null,
+            etag: existingRecord ? existingRecord.etag : null, // 保留ETag，虽然内容变了，但下次请求若304我们会再次apply补丁
             timestamp: Date.now()
         });
     } catch (e) {}
 
+    // 4. 如果正好是当前显示的目录，立即刷新UI
     if (state.currentPath === parentPath) {
         state.files = listCopy;
         if (typeof applyFiltersAndSort === 'function') applyFiltersAndSort();
@@ -7397,130 +7419,7 @@ async function uploadSingleReleaseAsset(file, index) {
         reader.readAsArrayBuffer(file);
     });
 }
-async function uploadSingleFile(file, index) {
-    const MAX_FILE_SIZE_BYTES = 100 * 1024 * 1024;
-    return new Promise(async (resolve, reject) => {
-        const progressBar = document.querySelector(`.upload-progress[data-index="${index}"]`);
-        const statusElement = document.querySelector(`.upload-status[data-index="${index}"]`);
-        const percentTextEl = progressBar ? progressBar.querySelector(`.percent-text[data-index="${index}"]`) : null;
-        if (file.size > MAX_FILE_SIZE_BYTES) {
-            if (statusElement) {
-                statusElement.textContent = `文件过大 (限制100MB)`;
-                statusElement.className = 'upload-status error';
-            }
-            showToast(`文件 "${file.name}" 超过100MB官方限制`);
-            reject(new Error('文件过大'));
-            return;
-        }
-        if (statusElement) statusElement.textContent = '正在上传...';
-        const reader = new FileReader();
-        reader.readAsArrayBuffer(file);
-        reader.onload = async (e) => {
-            let progress = 0;
-            let progressInterval = null;
-            const [owner, repo] = state.currentRepo.split('/');
-            const fileName = file.name;
-            const filePath = state.currentPath ? `${state.currentPath}${fileName}` : fileName;
-            const verifyUpload = async () => {
-                if (statusElement) statusElement.textContent = '上传超时，正在验证...';
-                try {
-                    await new Promise(res => setTimeout(res, 2000));
-                    const verifyUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${filePath}?ref=${state.currentBranch}&t=${Date.now()}`;
-                    const verifyRes = await fetch(verifyUrl, {
-                        headers: { 'Authorization': `token ${state.token}`, 'User-Agent': 'Mozilla/5.0' }
-                    });
-                    if (verifyRes.ok) {
-                        return true;
-                    }
-                    return false;
-                } catch (verifyError) {
-                    return false;
-                }
-            };
-            try {
-                progressInterval = setInterval(() => {
-                    if (progress < 95) {
-                        progress += 1;
-                        if (progressBar) progressBar.style.width = `${progress}%`;
-                        if (percentTextEl) percentTextEl.textContent = `${progress}%`;
-                    }
-                }, 100);
-                const base64String = arrayBufferToBase64(e.target.result);
-                if (!state || !state.currentRepo) throw new Error('未选择仓库');
-                let existingFileSha = null;
-                try {
-                    const checkUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${filePath}?ref=${state.currentBranch}`;
-                    const checkRes = await fetch(checkUrl, { headers: { 'Authorization': `token ${state.token}`, 'User-Agent': 'Mozilla/5.0' } });
-                    if (checkRes.ok) existingFileSha = (await checkRes.json()).sha;
-                } catch (e) { console.warn(`无法获取文件SHA: ${e.message}`); }
-                const requestBody = {
-                    message: `Upload ${fileName}`,
-                    content: base64String,
-                    branch: state.currentBranch
-                };
-                if (existingFileSha) requestBody.sha = existingFileSha;
-                const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`, {
-                    method: 'PUT',
-                    headers: { 'Authorization': `token ${state.token}`, 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0' },
-                    body: JSON.stringify(requestBody),
-                    signal: AbortSignal.timeout(300000)
-                });
-                if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({}));
-                    throw new Error(errorData.message || `上传失败: HTTP ${response.status}`);
-                }
-                clearInterval(progressInterval);
-                progress = 100;
-                if (progressBar) progressBar.style.width = '100%';
-                if (percentTextEl) percentTextEl.textContent = '100%';
-                if (statusElement) {
-                    statusElement.textContent = '上传成功';
-                    statusElement.className = 'upload-status success';
-                }
-                resolve();
-            } catch (error) {
-                let isVerifiedSuccess = false;
-                if (error.name === 'AbortError' || error.message.includes('Failed to fetch')) {
-                    isVerifiedSuccess = await verifyUpload();
-                }
-                if (isVerifiedSuccess) {
-                    if (statusElement) {
-                        statusElement.textContent = '上传成功 (已验证)';
-                        statusElement.className = 'upload-status success';
-                    }
-                    resolve();
-                } else {
-                    if (statusElement) {
-                        statusElement.textContent = '上传失败';
-                        statusElement.className = 'upload-status error';
-                    }
-                    reject(new Error(`上传失败: ${error.message}`));
-                }
-            } finally {
-                if (progressInterval) clearInterval(progressInterval);
-                const itemContainer = statusElement ? statusElement.closest('.upload-item') : null;
-                if (itemContainer && statusElement.classList.contains('success')) {
-                    setTimeout(() => {
-                        itemContainer.style.transition = 'opacity 0.5s, height 0.5s, margin 0.5s, padding 0.5s';
-                        itemContainer.style.opacity = '0';
-                        itemContainer.style.height = '0';
-                        itemContainer.style.margin = '0';
-                        itemContainer.style.padding = '0';
-                        itemContainer.style.overflow = 'hidden';
-                        setTimeout(() => itemContainer.remove(), 500);
-                    }, 1500);
-                }
-            }
-        };
-        reader.onerror = () => {
-            if (statusElement) {
-                statusElement.textContent = '文件读取失败';
-                statusElement.className = 'upload-status error';
-            }
-            reject(new Error('文件读取失败'));
-        };
-    });
-}
+
 
 function arrayBufferToBase64(buffer) {
     let binary = '';
