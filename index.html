@@ -5544,7 +5544,7 @@ async function saveEditedFile() {
 
     const saveBtn = el.saveEdit;
     saveBtn.disabled = true;
-    saveBtn.innerHTML = '保存中 <i class="fa fa-spinner fa-spin"></i>';
+    saveBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
     el.editorOverlay.classList.add('show');
 
     try {
