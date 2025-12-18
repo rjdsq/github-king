@@ -1,42 +1,37 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-	<head>
-		<meta charset="UTF-8">
-		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-		<meta name="theme-color" content="#f0f2f5">
-		<title>
-			GitHub king - 仓库管理器
-		</title>
-		<link rel="stylesheet" href="./style.css">
-		<link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/font-awesome/7.0.0/css/all.min.css">
-		 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-		  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-		  <script src="./tx.js"></script>
-<script>
-    (function() {
-        try {
-            const savedTheme = localStorage.getItem('app_theme') || 'light';
-            const themeColorMeta = document.querySelector('meta[name="theme-color"]');
-            
-            if (savedTheme === 'light') {
-                document.documentElement.classList.add('light-theme-loading');
-                if (themeColorMeta) themeColorMeta.setAttribute('content', '#f0f2f5');
-            } else {
-                if (themeColorMeta) themeColorMeta.setAttribute('content', '#04091a');
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#f0f2f5">
+    <title>GitHub king - 仓库管理器</title>
+    <link rel="dns-prefetch" href="https://cdn.bootcdn.net">
+    <link rel="stylesheet" href="./style.css">
+    <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <script src="./tx.js" defer></script>
+    <script>
+        (function() {
+            try {
+                const savedTheme = localStorage.getItem('app_theme') || 'light';
+                const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+                
+                if (savedTheme === 'light') {
+                    document.documentElement.classList.add('light-theme-loading');
+                    if (themeColorMeta) themeColorMeta.setAttribute('content', '#f0f2f5');
+                } else {
+                    if (themeColorMeta) themeColorMeta.setAttribute('content', '#04091a');
+                }
+            } catch (e) {}
+        })();
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            if (document.documentElement.classList.contains('light-theme-loading')) {
+                document.body.classList.add('light-theme');
+                requestAnimationFrame(() => {
+                    document.documentElement.classList.remove('light-theme-loading');
+                });
             }
-        } catch (e) {}
-    })();
-    
-    document.addEventListener('DOMContentLoaded', function() {
-        if (document.documentElement.classList.contains('light-theme-loading')) {
-            document.body.classList.add('light-theme');
-            requestAnimationFrame(() => {
-                document.documentElement.classList.remove('light-theme-loading');
-            });
-        }
-    });
-</script>
-	</head>
+        });
+    </script>
+</head>
 	<style>
 
 
@@ -1410,6 +1405,113 @@ const NON_EDITABLE_EXTS = [
     'db', 'sqlite', 'mdb'
 ];
 
+
+
+
+
+
+const ConsistencyManager = {
+    // 将有效期延长至 60 秒，对抗 GitHub API 的缓存延迟
+    DURATION: 60000, 
+    buffer: [],
+
+    // 辅助：标准化路径（确保末尾有且只有一个 /，根目录为空）
+    normalizeDir(path) {
+        if (!path) return '';
+        return path.endsWith('/') ? path : path + '/';
+    },
+
+    add(action) {
+        this.load(); // 先加载最新，防止覆盖
+        this.clean();
+        
+        // 如果是重名文件操作，先移除旧记录，避免冲突
+        if (action.file) {
+            this.buffer = this.buffer.filter(item => 
+                !(item.type === action.type && item.file && item.file.path === action.file.path)
+            );
+        }
+
+        this.buffer.push({
+            ...action,
+            timestamp: Date.now()
+        });
+        this.save();
+    },
+
+    clean() {
+        const now = Date.now();
+        // 过滤掉超过 60 秒的记录
+        this.buffer = this.buffer.filter(item => now - item.timestamp < this.DURATION);
+    },
+
+    save() {
+        localStorage.setItem('consistency_buffer', JSON.stringify(this.buffer));
+    },
+
+    load() {
+        try {
+            const saved = JSON.parse(localStorage.getItem('consistency_buffer') || '[]');
+            this.buffer = Array.isArray(saved) ? saved : [];
+            this.clean(); // 加载时顺便清理过期数据
+        } catch (e) {
+            this.buffer = [];
+        }
+    },
+
+    // 核心逻辑：应用本地补丁到网络数据上
+    apply(fileList) {
+        this.load(); // 每次应用前确保读取最新
+        if (this.buffer.length === 0 || !fileList) return fileList;
+
+        let result = [...fileList];
+        const currentPath = this.normalizeDir(state.currentPath || '');
+
+        this.buffer.forEach(action => {
+            // 1. 处理删除：强制移除列表中的文件
+            if (action.type === 'delete') {
+                result = result.filter(f => 
+                    f.path !== action.path && !f.path.startsWith(action.path + '/')
+                );
+            }
+            // 2. 处理新增：强制添加到列表
+            else if (action.type === 'add') {
+                const parentPath = this.normalizeDir(action.parentPath || '');
+                // 只有当操作发生在当前目录下时才添加
+                if (parentPath === currentPath) {
+                    // 先防重，如果列表里已经有了（哪怕是旧的），先剔除，用我们最新的覆盖
+                    result = result.filter(f => f.path !== action.file.path);
+                    result.push(action.file);
+                }
+            }
+            // 3. 处理重命名：移除旧的，添加新的
+            else if (action.type === 'rename') {
+                // 移除旧路径文件
+                result = result.filter(f => f.path !== action.oldPath);
+                
+                // 如果当前目录是新文件的父目录，则添加新文件
+                const newParentPath = this.normalizeDir(action.newParentPath || '');
+                if (newParentPath === currentPath) {
+                    result = result.filter(f => f.path !== action.newFile.path);
+                    result.push(action.newFile);
+                }
+            }
+        });
+
+        // 重新排序，确保补丁后的列表顺序正确
+        // 这里复用原本的排序逻辑，确保新增文件不会总是跑到底部
+        if (typeof applyFiltersAndSort === 'function') {
+             // 注意：这里我们无法直接调用 applyFiltersAndSort 修改 state，
+             // 所以我们在 fetchFiles 流程中把 result 赋值给 state.files 后会再次排序。
+             // 这里仅返回数据。
+        }
+
+        return result;
+    }
+};
+
+// 初始化加载
+ConsistencyManager.load();
 
 
 
@@ -3288,16 +3390,24 @@ async function invalidateCacheForPath(path) {
     const cacheKey = `${state.currentRepo}:${state.currentBranch}:${path}`;
     state.fileCache.delete(cacheKey);
     await SimpleDB.del(cacheKey);
+    
     let parentPath = '';
     if (path.includes('/')) {
-        parentPath = path.substring(0, path.lastIndexOf('/'));
+        let cleanPath = path.endsWith('/') ? path.slice(0, -1) : path;
+        parentPath = cleanPath.substring(0, cleanPath.lastIndexOf('/')) + '/';
     }
+    
     const parentCacheKey = `${state.currentRepo}:${state.currentBranch}:${parentPath}`;
     state.fileCache.delete(parentCacheKey);
     await SimpleDB.del(parentCacheKey);
+    
     const treeKey = `full_tree_cache:${state.currentRepo}:${state.currentBranch}`;
     await SimpleDB.del(treeKey);
     state.repoTreeCache = null;
+    
+    if (parentPath !== path) {
+        invalidateCacheForPathAndParents(parentPath);
+    }
 }
 
 function renderRepoList(reposSource) {
@@ -4325,31 +4435,47 @@ async function fetchFiles(forceRefresh = false, showLoader = true) {
     if (!state.currentRepo || !state.currentBranch) return;
     const pathForFetch = state.currentPath;
     let hasRenderedCache = false;
+    
     if (forceRefresh) {
         if (typeof recentlySavedCache !== 'undefined') {
             recentlySavedCache.clear();
         }
+        // 注意：刷新时不要清除 ConsistencyManager，因为网络数据可能依然是脏的
     }
+
     if (!forceRefresh) {
         const cacheKey = `${state.currentRepo}:${state.currentBranch}:${pathForFetch}`;
+        
+        // 1. 尝试内存缓存
         if (state.fileCache.has(cacheKey)) {
-            state.files = state.fileCache.get(cacheKey);
+            let files = state.fileCache.get(cacheKey);
+            // 应用补丁
+            files = ConsistencyManager.apply(files);
+            
+            state.files = files;
             applyFiltersAndSort();
             renderFileList();
             hasRenderedCache = true;
         } else {
+            // 2. 尝试 DB 缓存
             try {
                 const cachedData = await SimpleDB.get(cacheKey);
-                if (cachedData && Array.isArray(cachedData)) {
-                    state.files = cachedData;
-                    state.fileCache.set(cacheKey, cachedData);
+                if (cachedData && Array.isArray(cachedData.data)) {
+                    // 应用补丁
+                    let files = ConsistencyManager.apply(cachedData.data);
+                    
+                    state.files = files;
+                    state.fileCache.set(cacheKey, files);
                     applyFiltersAndSort();
                     renderFileList();
                     hasRenderedCache = true;
                 } else if (state.repoTreeCache) {
+                    // 3. 尝试 Tree 缓存
                     const localFiles = getFilesFromLocalTree(pathForFetch);
                     if (localFiles) {
-                        state.files = localFiles;
+                        // 应用补丁
+                        state.files = ConsistencyManager.apply(localFiles);
+                        
                         applyFiltersAndSort();
                         renderFileList();
                         hasRenderedCache = true;
@@ -4358,9 +4484,11 @@ async function fetchFiles(forceRefresh = false, showLoader = true) {
             } catch (e) {}
         }
     }
+    
     if (showLoader && !hasRenderedCache) {
         el.fileList.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
     }
+    
     await fetchFilesFromNetwork(false, pathForFetch, hasRenderedCache);
 }
 
@@ -4397,13 +4525,16 @@ async function fetchFilesFromNetwork(isInitialLoad = false, pathForFetch, isSile
         const url = `https://api.github.com/repos/${owner}/${repo}/contents/${pathForFetch}?ref=${state.currentBranch}&t=${timestamp}`;
         const cacheKey = `${state.currentRepo}:${state.currentBranch}:${pathForFetch}`;
         
+        // 如果有本地待同步操作，则不使用 ETag 缓存，强制拉取新数据进行比对
         let etag = null;
-        try {
-            const cachedRecord = await SimpleDB.get(cacheKey);
-            if (cachedRecord && cachedRecord.etag) {
-                etag = cachedRecord.etag;
-            }
-        } catch (e) {}
+        if (ConsistencyManager.buffer.length === 0) { 
+            try {
+                const cachedRecord = await SimpleDB.get(cacheKey);
+                if (cachedRecord && cachedRecord.etag) {
+                    etag = cachedRecord.etag;
+                }
+            } catch (e) {}
+        }
 
         const headers = {
             'Authorization': `token ${state.token}`,
@@ -4415,11 +4546,21 @@ async function fetchFilesFromNetwork(isInitialLoad = false, pathForFetch, isSile
 
         const res = await fetch(url, {
             headers: headers,
-            cache: 'no-store',
+            cache: 'no-store', // 强制不使用浏览器缓存
             signal: signal
         });
 
         if (res.status === 304) {
+            // 即使是 304，也要应用本地补丁，因为本地可能刚删除了文件但 ETag 没变
+            if (state.files) {
+                const patchedFiles = ConsistencyManager.apply(state.files);
+                // 只有当补丁导致数据变化时才重新渲染
+                if (JSON.stringify(patchedFiles) !== JSON.stringify(state.files)) {
+                    state.files = patchedFiles;
+                    applyFiltersAndSort();
+                    renderFileList();
+                }
+            }
             return;
         }
 
@@ -4432,18 +4573,19 @@ async function fetchFilesFromNetwork(isInitialLoad = false, pathForFetch, isSile
                 }
                 return;
             }
-            if (!isSilentUpdate) {
-                throw new Error('加载文件失败');
-            } else {
-                return;
-            }
+            if (!isSilentUpdate) throw new Error('加载文件失败');
+            return;
         }
 
         const newEtag = res.headers.get('ETag');
-        const data = await res.json();
+        const rawData = await res.json();
         
-        let fetchedFiles = Array.isArray(data) ? data : [];
+        let fetchedFiles = Array.isArray(rawData) ? rawData : [];
         
+        // 【关键步骤】应用本地的一致性补丁
+        fetchedFiles = ConsistencyManager.apply(fetchedFiles);
+
+        // 图片预处理逻辑
         fetchedFiles = fetchedFiles.map(file => {
             const isImage = IMAGE_EXTS.includes(file.name.split('.').pop()?.toLowerCase());
             if (isImage) {
@@ -4452,10 +4594,10 @@ async function fetchFilesFromNetwork(isInitialLoad = false, pathForFetch, isSile
             return file;
         });
 
-        fetchedFiles.sort((a, b) => a.type === 'dir' && b.type !== 'dir' ? -1 : a.type !== 'dir' && b.type === 'dir' ? 1 : a.name.localeCompare(b.name));
-
+        // 存入内存缓存
         state.fileCache.set(cacheKey, [...fetchedFiles]);
         
+        // 存入 IndexedDB
         try {
             await SimpleDB.set(cacheKey, {
                 data: [...fetchedFiles],
@@ -4466,6 +4608,7 @@ async function fetchFilesFromNetwork(isInitialLoad = false, pathForFetch, isSile
 
         if (pathForFetch === state.currentPath) {
             state.files = fetchedFiles;
+            // 清理旧的编辑缓存
             if (typeof recentlySavedCache !== 'undefined') {
                 for (const file of fetchedFiles) {
                     const cached = recentlySavedCache.get(file.path);
@@ -4480,9 +4623,7 @@ async function fetchFilesFromNetwork(isInitialLoad = false, pathForFetch, isSile
         }
 
     } catch (err) {
-        if (err.name === 'AbortError') {
-            return;
-        }
+        if (err.name === 'AbortError') return;
         if (pathForFetch === state.currentPath && !isSilentUpdate) {
             showToast('加载文件失败: ' + err.message);
         }
@@ -4490,6 +4631,7 @@ async function fetchFilesFromNetwork(isInitialLoad = false, pathForFetch, isSile
         if (currentFetchController && currentFetchController.signal === signal) {
             currentFetchController = null;
         }
+        // 移除加载动画
         if (pathForFetch === state.currentPath) {
             const spinner = document.querySelector('#fileList .spinner');
             if (spinner) {
@@ -5847,8 +5989,48 @@ const hideContextMenu = () => {
 
 
 async function updateGlobalCacheState(action, itemData) {
+    const { path, newPath, type, sha, size, parentPath } = itemData;
+    
+    // === 核心修改：立即注册到一致性管理器 ===
+    if (action === 'delete') {
+        ConsistencyManager.add({ type: 'delete', path: path });
+    } else if (action === 'add') {
+        const fileName = path.split('/').pop();
+        ConsistencyManager.add({ 
+            type: 'add', 
+            file: { 
+                name: fileName, 
+                path: path, 
+                type: type === 'tree' ? 'dir' : 'file', 
+                sha: sha, 
+                size: size 
+            },
+            parentPath: parentPath 
+        });
+    } else if (action === 'rename') {
+        const newName = newPath.split('/').pop();
+        // 计算新文件的父目录
+        let newParent = newPath.includes('/') ? newPath.substring(0, newPath.lastIndexOf('/') + 1) : '';
+        // 处理 ConsistencyManager.normalizeDir 需要的格式（带/）
+        if (newParent && !newParent.endsWith('/')) newParent += '/';
+
+        ConsistencyManager.add({ 
+            type: 'rename', 
+            oldPath: path, 
+            newParentPath: newParent,
+            newFile: { 
+                name: newName, 
+                path: newPath, 
+                type: type === 'tree' ? 'dir' : 'file', 
+                sha: sha, 
+                size: size 
+            }
+        });
+    }
+    // ==========================================
+
+    // 原有的 Tree Cache 更新逻辑保留，用于加速 Tree 模式
     if (state.repoTreeCache) {
-        const { path, newPath, type, sha, size } = itemData;
         const isDir = type === 'dir' || type === 'tree';
         
         if (action === 'delete') {
@@ -5864,25 +6046,21 @@ async function updateGlobalCacheState(action, itemData) {
         else if (action === 'add') {
             const exists = state.repoTreeCache.some(i => i.path === path);
             if (!exists) {
-                const newItem = {
+                state.repoTreeCache.push({
                     path: path,
                     mode: isDir ? '040000' : '100644',
                     type: isDir ? 'tree' : 'blob',
                     sha: sha || null,
                     size: size || 0,
                     url: '' 
-                };
-                state.repoTreeCache.push(newItem);
-                state.repoTreeCache.sort((a, b) => {
-                    if (a.type !== b.type) return a.type === 'tree' ? -1 : 1;
-                    return a.path.localeCompare(b.path);
                 });
+                // 简单排序
+                state.repoTreeCache.sort((a, b) => a.path.localeCompare(b.path));
             }
         }
         else if (action === 'rename') {
             const oldPrefix = path + '/';
             const newPrefix = newPath + '/';
-            
             state.repoTreeCache.forEach(node => {
                 if (node.path === path) {
                     node.path = newPath;
@@ -5894,43 +6072,39 @@ async function updateGlobalCacheState(action, itemData) {
 
         try {
             const treeKey = `full_tree_cache:${state.currentRepo}:${state.currentBranch}`;
-            await SimpleDB.set(treeKey, {
-                tree: state.repoTreeCache,
-                etag: null, 
-                timestamp: Date.now()
-            });
+            await SimpleDB.set(treeKey, { tree: state.repoTreeCache, timestamp: Date.now() });
         } catch (e) {}
     }
 
+    // 更新当前列表视图缓存（父目录缓存）
     let targetPath = action === 'rename' ? itemData.path : (itemData.path || '');
-    let parentPath = '';
+    let computedParentPath = '';
     
-    if (action === 'add' && itemData.parentPath) {
-        parentPath = itemData.parentPath;
+    if (action === 'add' && itemData.parentPath !== undefined) {
+        computedParentPath = itemData.parentPath;
     } else {
         if (targetPath.endsWith('/')) targetPath = targetPath.slice(0, -1);
         const lastSlash = targetPath.lastIndexOf('/');
-        parentPath = lastSlash > -1 ? targetPath.substring(0, lastSlash + 1) : '';
+        computedParentPath = lastSlash > -1 ? targetPath.substring(0, lastSlash + 1) : '';
     }
 
-    await modifyParentCache(parentPath, action, itemData);
+    // 调用原来的 helper 更新内存和 DB
+    await modifyParentCache(computedParentPath, action, itemData);
 
+    // 清理子目录缓存（递归删除）
     if (action === 'rename' || action === 'delete') {
         const cacheKeyPrefix = `${state.currentRepo}:${state.currentBranch}:`;
-        const deleteRecursive = async (basePath) => {
-            const keys = await SimpleDB.keys();
-            const targetPrefix = cacheKeyPrefix + basePath;
-            for (const key of keys) {
-                if (key.startsWith(targetPrefix)) {
-                    state.fileCache.delete(key);
-                    await SimpleDB.del(key);
-                }
-            }
-        };
-        
         let cleanupPath = itemData.path;
         if (cleanupPath && !cleanupPath.endsWith('/')) cleanupPath += '/';
-        await deleteRecursive(cleanupPath);
+        
+        const keys = await SimpleDB.keys();
+        const targetPrefix = cacheKeyPrefix + cleanupPath;
+        for (const key of keys) {
+            if (key.startsWith(targetPrefix)) {
+                state.fileCache.delete(key);
+                await SimpleDB.del(key);
+            }
+        }
     }
 }
 
@@ -8980,8 +9154,14 @@ async function downloadSelectedItemsAsZip() {
     };
 
     updateProgressToast(0, 0, 'scanning');
-    const zip = new JSZip();
-    let allFilesToDownload = [];
+try {
+    await LibraryLoader.load(LIBS.JSZIP, 'JSZip');
+} catch (e) {
+    showToast('加载压缩组件失败', 'error');
+    return;
+}
+const zip = new JSZip();
+let allFilesToDownload = [];
 
     try {
         const rootItems = state.files.filter(file => state.selectedItems.has(file.path));
@@ -9037,7 +9217,13 @@ async function downloadFolderAsZip(folderItem) {
     };
 
     updateProgressToast(0, 0, 'scanning');
-    const zip = new JSZip();
+try {
+    await LibraryLoader.load(LIBS.JSZIP, 'JSZip');
+} catch (e) {
+    showToast('加载压缩组件失败', 'error');
+    return;
+}
+const zip = new JSZip();
 
     try {
         const allFiles = await gatherAllFiles(folderItem.path, folderItem.name);
@@ -11523,11 +11709,12 @@ async function showRepoOverview(repoInput) {
                 const res = await fetch(fetchUrl);
                 if (res.ok) {
                     const content = await res.text();
-                    if (typeof marked !== 'undefined') {
-                        readmeEl.innerHTML = marked.parse(content);
-                    } else {
-                        readmeEl.innerHTML = content.replace(/\n/g, '<br>');
-                    }
+                    await LibraryLoader.load(LIBS.MARKED, 'marked');
+if (typeof marked !== 'undefined') {
+    readmeEl.innerHTML = marked.parse(content);
+} else {
+    readmeEl.innerHTML = content.replace(/\n/g, '<br>');
+}
                     const lastSlash = targetPath.lastIndexOf('/');
                     if (lastSlash !== -1) {
                         currentDocDir = targetPath.substring(0, lastSlash);
@@ -11627,8 +11814,8 @@ async function showRepoOverview(repoInput) {
                         });
                         if (rawRes.ok) {
                             const rawMarkdown = await rawRes.text();
-                            if (typeof marked !== 'undefined') readmeHtml = marked.parse(rawMarkdown);
-                            else readmeHtml = rawMarkdown.replace(/\n/g, '<br>');
+                            await LibraryLoader.load(LIBS.MARKED, 'marked');
+readmeHtml = marked.parse(rawMarkdown);
                         }
                     }
                 } else {
@@ -14079,7 +14266,12 @@ async function unzipFile(file) {
             const blob = await response.blob();
 
             showToast('正在读取压缩包内容...');
-            const zip = await JSZip.loadAsync(blob);
+try {
+    await LibraryLoader.load(LIBS.JSZIP, 'JSZip');
+} catch (e) {
+    throw new Error('加载解压组件失败');
+}
+const zip = await JSZip.loadAsync(blob);
             const filesInZip = Object.values(zip.files).filter(item => !item.dir);
             const totalFiles = filesInZip.length;
             let uploadedCount = 0;
@@ -14886,6 +15078,30 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 
 
+<script>
+const LibraryLoader = {
+    loaded: {},
+    load: function(url, globalName) {
+        if (this.loaded[url]) return Promise.resolve(window[globalName]);
+        return new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = url;
+            script.onload = () => {
+                this.loaded[url] = true;
+                resolve(window[globalName]);
+            };
+            script.onerror = reject;
+            document.head.appendChild(script);
+        });
+    }
+};
 
+const LIBS = {
+    JSZIP: 'https://cdn.bootcdn.net/ajax/libs/jszip/3.10.1/jszip.min.js',
+    MARKED: 'https://cdn.bootcdn.net/ajax/libs/marked/9.1.2/marked.min.js'
+};
+
+
+</script>
 </body>
 </html>
