@@ -1409,7 +1409,20 @@ const NON_EDITABLE_EXTS = [
 
 
 
-
+const UpdatedFilesManager = {
+    getKey(path) {
+        return `smart_sha_${state.currentRepo}_${state.currentBranch}_${path}`;
+    },
+    get(path) {
+        return localStorage.getItem(this.getKey(path));
+    },
+    set(path, sha) {
+        localStorage.setItem(this.getKey(path), sha);
+    },
+    remove(path) {
+        localStorage.removeItem(this.getKey(path));
+    }
+};
 
 
 const ConsistencyManager = {
@@ -1734,20 +1747,6 @@ const state = {
 
 
 
-const UpdatedFilesManager = {
-    getKey(path) {
-        return `smart_sha_${state.currentRepo}_${state.currentBranch}_${path}`;
-    },
-    get(path) {
-        return localStorage.getItem(this.getKey(path));
-    },
-    set(path, sha) {
-        localStorage.setItem(this.getKey(path), sha);
-    },
-    remove(path) {
-        localStorage.removeItem(this.getKey(path));
-    }
-};
 
 const recentlySavedCache = new Map();
 
@@ -2528,32 +2527,19 @@ function getDomainFromUrl(url) {
 
 function getProxiedUrl(originalUrl) {
     try {
-        if (!originalUrl.startsWith('http')) return originalUrl;
+        if (!originalUrl || !originalUrl.startsWith('http')) return originalUrl;
         
-        const proxies = JSON.parse(localStorage.getItem('proxies') || '[]');
-        const activeIndex = parseInt(localStorage.getItem('active_proxy_index') || '0');
-        const enable = JSON.parse(localStorage.getItem('proxy_global_enable') || 'true');
-        
-        if (enable && proxies.length > 0 && activeIndex >= 0 && proxies[activeIndex]) {
-            const proxy = proxies[activeIndex];
-            const proxyUrl = proxy.url;
-            
+        const enable = state.proxyGlobalEnable;
+        if (!enable) return originalUrl;
+
+        const proxies = state.proxies;
+        const index = state.activeProxyIndex;
+
+        if (proxies.length > 0 && index >= 0 && index < proxies.length) {
+            let proxyUrl = proxies[index].url;
             if (proxyUrl) {
-                if (proxy.type === 'raw_domain_replace') {
-                     try {
-                        const urlObj = new URL(proxyUrl.startsWith('http') ? proxyUrl : 'https://' + proxyUrl);
-                        const proxyDomain = urlObj.hostname;
-                        let newUrl = originalUrl.replace(/^(https?:\/\/raw\.)githubusercontent\.com(\/.*)$/i, `$1${proxyDomain}$2`);
-                        if (!newUrl.startsWith('http')) newUrl = 'https://' + newUrl;
-                        return newUrl;
-                     } catch(e) {
-                         return originalUrl;
-                     }
-                } else {
-                    let base = proxyUrl;
-                    if (!base.endsWith('/')) base += '/';
-                    return base + originalUrl;
-                }
+                if (!proxyUrl.endsWith('/')) proxyUrl += '/';
+                return proxyUrl + originalUrl;
             }
         }
     } catch (e) {}
@@ -3006,7 +2992,6 @@ let toastTimer = null;
 
 function showToast(message, type = 'info', duration = 2500) {
     const toastEl = document.getElementById('toast');
-    
     if (!toastEl) return;
 
     if (toastTimer) {
@@ -3015,29 +3000,36 @@ function showToast(message, type = 'info', duration = 2500) {
     }
 
     let iconHtml = '';
-    if (type === 'success') {
-        iconHtml = '<i class="fa-solid fa-circle-check"></i>';
-    } else if (type === 'error') {
-        iconHtml = '<i class="fa-solid fa-circle-xmark"></i>';
-    } else {
-        iconHtml = '<i class="fa-solid fa-circle-info"></i>';
-    }
+    if (type === 'success') iconHtml = '<i class="fa-solid fa-circle-check" style="color:#34d399"></i>';
+    else if (type === 'error') iconHtml = '<i class="fa-solid fa-circle-xmark" style="color:#f87171"></i>';
+    else if (type === 'loading') iconHtml = '<i class="fa fa-spinner fa-spin"></i>';
+    else iconHtml = '<i class="fa-solid fa-circle-info" style="color:#60a5fa"></i>';
 
     toastEl.innerHTML = `${iconHtml}<span>${message}</span>`;
     
-    toastEl.className = `show toast-${type}`;
+    if (!toastEl.classList.contains('show')) {
+        toastEl.className = `show toast-${type}`;
+        void toastEl.offsetWidth; 
+    } else {
+        toastEl.className = `show toast-${type}`;
+    }
 
-    toastTimer = setTimeout(() => {
+    if (duration > 0) {
+        toastTimer = setTimeout(() => {
+            hideToast();
+        }, duration);
+    }
+}
+
+function hideToast() {
+    const toastEl = document.getElementById('toast');
+    if (toastEl) {
         toastEl.classList.remove('show');
-        
-        setTimeout(() => {
-            if (!toastEl.classList.contains('show')) {
-                toastEl.className = ''; 
-            }
-        }, 400); 
-        
-        toastTimer = null;
-    }, duration);
+        if (toastTimer) {
+            clearTimeout(toastTimer);
+            toastTimer = null;
+        }
+    }
 }
 
 
@@ -4260,15 +4252,14 @@ async function uploadSingleFile(file, index) {
         
         if (file.size > MAX_FILE_SIZE_BYTES) {
             if (statusElement) {
-                statusElement.textContent = `文件过大 (限制100MB)`;
+                statusElement.textContent = `文件过大`;
                 statusElement.className = 'upload-status error';
             }
-            showToast(`文件 "${file.name}" 超过100MB官方限制`);
             reject(new Error('文件过大'));
             return;
         }
         
-        if (statusElement) statusElement.textContent = '正在上传...';
+        if (statusElement) statusElement.textContent = '准备中...';
         
         const reader = new FileReader();
         reader.readAsArrayBuffer(file);
@@ -4280,7 +4271,6 @@ async function uploadSingleFile(file, index) {
             const fileName = file.name;
             const currentDir = state.currentPath || '';
             const filePath = currentDir ? `${currentDir}${fileName}` : fileName;
-            
             const parentPathForCache = currentDir;
 
             try {
@@ -4293,14 +4283,13 @@ async function uploadSingleFile(file, index) {
                 }, 100);
 
                 const base64String = arrayBufferToBase64(e.target.result);
-                if (!state || !state.currentRepo) throw new Error('未选择仓库');
                 
                 let existingFileSha = null;
                 try {
                     const checkUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${filePath}?ref=${state.currentBranch}`;
                     const checkRes = await fetch(checkUrl, { headers: { 'Authorization': `token ${state.token}`, 'User-Agent': 'Mozilla/5.0' } });
                     if (checkRes.ok) existingFileSha = (await checkRes.json()).sha;
-                } catch (e) { console.warn(`无法获取文件SHA: ${e.message}`); }
+                } catch (e) {}
 
                 const requestBody = {
                     message: `Upload ${fileName}`,
@@ -4316,10 +4305,7 @@ async function uploadSingleFile(file, index) {
                     signal: AbortSignal.timeout(300000)
                 });
 
-                if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({}));
-                    throw new Error(errorData.message || `上传失败: HTTP ${response.status}`);
-                }
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 
                 const responseData = await response.json();
 
@@ -4332,7 +4318,6 @@ async function uploadSingleFile(file, index) {
                 });
 
                 clearInterval(progressInterval);
-                progress = 100;
                 if (progressBar) progressBar.style.width = '100%';
                 if (percentTextEl) percentTextEl.textContent = '100%';
                 if (statusElement) {
@@ -4346,31 +4331,19 @@ async function uploadSingleFile(file, index) {
                     statusElement.textContent = '上传失败';
                     statusElement.className = 'upload-status error';
                 }
-                reject(new Error(`上传失败: ${error.message}`));
+                reject(error);
             } finally {
                 if (progressInterval) clearInterval(progressInterval);
                 const itemContainer = statusElement ? statusElement.closest('.upload-item') : null;
                 if (itemContainer && statusElement.classList.contains('success')) {
                     setTimeout(() => {
-                        itemContainer.style.transition = 'opacity 0.5s, height 0.5s, margin 0.5s, padding 0.5s';
                         itemContainer.style.opacity = '0';
-                        itemContainer.style.height = '0';
-                        itemContainer.style.margin = '0';
-                        itemContainer.style.padding = '0';
-                        itemContainer.style.overflow = 'hidden';
                         setTimeout(() => itemContainer.remove(), 500);
                     }, 1500);
                 }
             }
         };
-        
-        reader.onerror = () => {
-            if (statusElement) {
-                statusElement.textContent = '文件读取失败';
-                statusElement.className = 'upload-status error';
-            }
-            reject(new Error('文件读取失败'));
-        };
+        reader.onerror = () => reject(new Error('Read error'));
     });
 }
 
@@ -5259,21 +5232,22 @@ function updateEditorTheme() {
 
 
 
-async function editFile(file) {
-    let currentLatestFile = file;
+async function editFile(fileInput) {
+    // 1. 锁定当前文件对象
+    let currentFile = fileInput;
     if (state.files && state.files.length > 0) {
-        const found = state.files.find(f => f.path === file.path);
-        if (found) currentLatestFile = found;
+        const found = state.files.find(f => f.path === fileInput.path);
+        if (found) currentFile = found;
     }
 
-    state.editingFile = currentLatestFile;
-    el.editFileName.textContent = currentLatestFile.name;
+    // 2. 初始化 UI
+    state.editingFile = currentFile;
+    el.editFileName.textContent = currentFile.name;
     showEditStatus('', '');
     showEditModal();
     
-    // UI 初始化
-    el.saveEdit.classList.toggle('hidden', false);
-    el.revertEditBtn.classList.toggle('hidden', false);
+    el.saveEdit.classList.remove('hidden');
+    el.revertEditBtn.classList.remove('hidden');
     el.saveEdit.disabled = false;
     el.revertEditBtn.disabled = true;
     el.saveEdit.style.opacity = '0.6';
@@ -5284,102 +5258,89 @@ async function editFile(file) {
         adjustEditorDimensions();
         updateEditorTheme();
         
+        const isOwner = state.user && state.viewingOwner && (state.viewingOwner.toLowerCase() === state.user.login.toLowerCase());
+        
         aceEditorInstance.setReadOnly(true);
-        aceEditorInstance.setValue('正在通过加速通道加载...', -1);
+        aceEditorInstance.setValue('加载中...', -1);
 
-        let content = '';
-        let targetSha = currentLatestFile.sha;
+        let content = null;
+        let finalSha = currentFile.sha;
 
-        // 1. 尝试从 IndexedDB 读取缓存
-        if (targetSha) {
-            const cacheKey = `file_content_${targetSha}`;
+        // 3. 【硬核策略】检查 60秒 内的内存缓存
+        // 只要路径匹配且未过期，无条件信任此数据
+        const recentData = recentlySavedCache.get(currentFile.path);
+        if (recentData && (Date.now() - recentData.timestamp < 60000)) {
+            content = recentData.content;
+            finalSha = recentData.sha;
+        }
+
+        // 4. 如果内存没命中，查 IndexedDB (基于 SHA)
+        if (content === null && finalSha && window.SimpleDB) {
             try {
-                const cachedContent = await SimpleDB.get(cacheKey);
-                if (cachedContent) {
-                    content = cachedContent;
-                    state.fileSha = targetSha;
+                const dbContent = await window.SimpleDB.get(`file_content_${finalSha}`);
+                if (typeof dbContent === 'string' && dbContent.length > 0) {
+                    content = dbContent;
                 }
             } catch (e) {}
         }
 
-        // 2. 如果缓存没有，走代理下载 Raw 文件
-        if (!content) {
+        // 5. 还没命中，走网络 (Raw + 代理)
+        if (content === null) {
             const [owner, repo] = state.currentRepo.split('/');
             const branch = state.currentBranch || 'main';
-            // 手动构建 Raw 链接，不依赖 API
-            const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${currentLatestFile.path}`;
-            // 关键：使用代理函数获取加速链接
+            const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${currentFile.path}`;
             const fetchUrl = typeof getProxiedUrl === 'function' ? getProxiedUrl(rawUrl) : rawUrl;
-
+            
             try {
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 15000); 
+                const timeoutId = setTimeout(() => controller.abort(), 10000);
                 
-                const res = await fetch(fetchUrl, { 
+                const res = await fetch(fetchUrl + `?t=${Date.now()}`, { 
                     cache: 'no-store',
                     signal: controller.signal
                 });
-                
                 clearTimeout(timeoutId);
 
                 if (res.ok) {
                     content = await res.text();
-                    
-                    // 尝试异步获取最新 SHA（为了保存做准备），不阻塞显示
-                    fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${currentLatestFile.path}?ref=${branch}`, {
-                        headers: { 'Authorization': `token ${state.token}` }
-                    }).then(r => r.json()).then(d => {
-                        if(d.sha) state.fileSha = d.sha;
-                    }).catch(() => {});
-
                 } else {
                     throw new Error(`HTTP ${res.status}`);
                 }
             } catch (err) {
-                // 3. 降级方案：如果代理下载失败，尝试原始 API (虽然慢，但作为保底)
-                const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${currentLatestFile.path}?ref=${branch}`;
-                const apiRes = await fetch(apiUrl, {
+                // 降级：走 API
+                const apiRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${currentFile.path}?ref=${branch}`, {
                     headers: { 'Authorization': `token ${state.token}` }
                 });
-                if (!apiRes.ok) throw new Error('加载失败，请检查网络');
+                if (!apiRes.ok) throw new Error('网络加载失败');
                 const apiData = await apiRes.json();
                 content = decodeURIComponent(escape(atob(apiData.content)));
-                state.fileSha = apiData.sha;
+                finalSha = apiData.sha;
             }
         }
 
-        // 渲染内容
-        state.originalContent = content;
-        if (!state.fileSha) state.fileSha = targetSha; 
-
-        // 写入缓存，供下次秒开
-        if (state.fileSha) {
-            const cacheKey = `file_content_${state.fileSha}`;
-            SimpleDB.set(cacheKey, content);
-        }
-
-        const mode = getAceMode(currentLatestFile.name);
+        // 6. 渲染内容
+        state.originalContent = content || '';
+        state.fileSha = finalSha;
+        
+        const mode = getAceMode(currentFile.name);
         aceEditorInstance.session.setMode(mode);
-        
-        // 判断权限
-        const isOwner = state.user && state.viewingOwner && (state.viewingOwner.toLowerCase() === state.user.login.toLowerCase());
         aceEditorInstance.setReadOnly(!isOwner);
-        
-        aceEditorInstance.setValue(content, -1);
+        aceEditorInstance.setValue(state.originalContent, -1);
         aceEditorInstance.session.getUndoManager().reset();
         
         aceEditorInstance.off('change');
         aceEditorInstance.on('change', checkContentChanges);
         checkContentChanges();
 
+        // 7. 【后台实时同步】
+        // 渲染完成后，悄悄去 API 查一下最新状态，确保 SHA 一致
+        performSmartSilentUpdate(currentFile, state.originalContent);
+
     } catch (e) {
         aceEditorInstance.setValue(`加载失败: ${e.message}`, -1);
-        showEditStatus(`错误：${e.message}`, 'error');
+        showEditStatus('出错', 'error');
     } finally {
         el.editorOverlay.classList.remove('show');
-        if (aceEditorInstance) {
-            aceEditorInstance.resize(true);
-        }
     }
 }
 
@@ -5388,52 +5349,62 @@ async function performSmartSilentUpdate(file, currentEditorContent) {
     try {
         const [owner, repo] = state.currentRepo.split('/');
         const timestamp = Date.now();
+        // 直接请求 API (Source of Truth)，不走代理
         const url = `https://api.github.com/repos/${owner}/${repo}/contents/${file.path}?ref=${state.currentBranch}&t=${timestamp}`;
+        
         const res = await fetch(url, {
             headers: {
-                'Authorization': `token ${state.token}`
+                'Authorization': `token ${state.token}`,
+                'Cache-Control': 'no-cache'
             }
         });
+
         if (!res.ok) return;
+
         const data = await res.json();
         const cloudContent = decodeURIComponent(escape(atob(data.content)));
+
+        // 场景 A: 云端内容和当前编辑器看到的一样 (最常见)
         if (cloudContent === currentEditorContent) {
+            // 仅仅是 SHA 变了 (例如其他元数据变更)，悄悄更新 SHA
             if (data.sha !== state.fileSha) {
                 state.fileSha = data.sha;
+                // 更新全局注册表，防止下次误报冲突
                 UpdatedFilesManager.set(file.path, data.sha);
             }
             return;
         }
+
+        // 场景 B: 云端内容更新了，且用户还没开始编辑
+        // 自动刷新编辑器，让用户看到最新的
         if (aceEditorInstance) {
             const currentVal = aceEditorInstance.getValue();
+            // 只有当用户还没修改时，才自动覆盖
             if (currentVal === state.originalContent) {
                 const cursor = aceEditorInstance.getCursorPosition();
                 const scrollY = aceEditorInstance.session.getScrollTop();
+                
                 aceEditorInstance.setValue(cloudContent, -1);
                 aceEditorInstance.moveCursorToPosition(cursor);
                 aceEditorInstance.session.setScrollTop(scrollY);
+                
                 state.originalContent = cloudContent;
                 state.fileSha = data.sha;
-                if (state.editingFile) state.editingFile.sha = data.sha;
-                if (state.files) {
-                    const idx = state.files.findIndex(f => f.path === file.path);
-                    if (idx !== -1) {
-                        state.files[idx].sha = data.sha;
-                        state.files[idx].size = data.size;
-                    }
-                }
-                UpdatedFilesManager.set(file.path, data.sha);
+                
+                // 同时更新 60秒 缓存，防止用户关掉重开又变回旧的
+                recentlySavedCache.set(file.path, {
+                    content: cloudContent,
+                    timestamp: Date.now(),
+                    sha: data.sha
+                });
+                
+                // 更新 DB
                 const cacheKey = `file_content_${data.sha}`;
                 if (window.SimpleDB) await SimpleDB.set(cacheKey, cloudContent);
-                if (typeof recentlySavedCache !== 'undefined') {
-                    recentlySavedCache.set(file.path, {
-                        content: cloudContent,
-                        timestamp: Date.now(),
-                        sha: data.sha
-                    });
-                }
+
                 showToast('已同步云端最新内容', 'success');
             } else {
+                // 用户已经改了，弹个提示但不覆盖
                 showToast('云端有新版本，因您已编辑而未自动覆盖', 'warning');
             }
         }
@@ -5533,111 +5504,112 @@ function checkContentChanges() {
 
 async function saveEditedFile() {
     if (!state.editingFile || !aceEditorInstance) {
-        showToast('编辑器状态异常', 'error');
+        showToast('编辑器未初始化', 'error');
         return;
     }
     const currentContent = aceEditorInstance.getValue();
-    if (currentContent === state.originalContent) {
-        showToast('文件未发生修改');
-        return;
-    }
-
     const saveBtn = el.saveEdit;
+    
     saveBtn.disabled = true;
-    saveBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
-    el.editorOverlay.classList.add('show');
-
+    saveBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i>'; 
+    
     try {
         const [owner, repo] = state.currentRepo.split('/');
-        // 必须使用 UTF-8 安全的 Base64 编码
         const encodedContent = btoa(unescape(encodeURIComponent(currentContent)));
         const url = `https://api.github.com/repos/${owner}/${repo}/contents/${state.editingFile.path}`;
         
-        const requestBody = {
-            message: `Update ${state.editingFile.name}`,
-            content: encodedContent,
-            sha: state.fileSha, // 必须携带上一次读取到的 SHA
-            branch: state.currentBranch
+        // 优先用 注册表 或 内存 SHA
+        let shaToUse = UpdatedFilesManager.get(state.editingFile.path) || state.fileSha || state.editingFile.sha;
+
+        const performSave = async (sha) => {
+            const body = {
+                message: `Update ${state.editingFile.name}`,
+                content: encodedContent,
+                sha: sha,
+                branch: state.currentBranch
+            };
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 30000);
+            
+            try {
+                const r = await fetch(url, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `token ${state.token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(body),
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+                return r;
+            } catch (err) {
+                clearTimeout(timeoutId);
+                throw err;
+            }
         };
 
-        // 设置 30秒 超时，避免无限等待
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 30000);
+        let res = await performSave(shaToUse);
 
-        let res = await fetch(url, {
-            method: 'PUT',
-            headers: {
-                'Authorization': `token ${state.token}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(requestBody),
-            signal: controller.signal
-        });
-        
-        clearTimeout(timeoutId);
-
-        // 处理 SHA 冲突 (409 Conflict)
+        // 409 自动解决
         if (res.status === 409) {
-            showToast('版本冲突，正在尝试合并...', 'info');
-            // 获取最新 SHA 再次尝试
-            const latestRes = await fetch(url + `?ref=${state.currentBranch}`, { 
-                headers: { 'Authorization': `token ${state.token}` } 
+            const getRef = await fetch(url + `?ref=${state.currentBranch}`, {
+                headers: { 'Authorization': `token ${state.token}`, 'Cache-Control': 'no-cache' }
             });
-            if (latestRes.ok) {
-                const latest = await latestRes.json();
-                requestBody.sha = latest.sha;
-                res = await fetch(url, {
-                    method: 'PUT',
-                    headers: { 'Authorization': `token ${state.token}`, 'Content-Type': 'application/json' },
-                    body: JSON.stringify(requestBody)
-                });
+            if (getRef.ok) {
+                const latest = await getRef.json();
+                res = await performSave(latest.sha);
             }
         }
 
         if (!res.ok) {
-            const errData = await res.json().catch(() => ({}));
-            throw new Error(errData.message || `保存失败 HTTP ${res.status}`);
+            const errJson = await res.json().catch(() => ({}));
+            throw new Error(errJson.message || `HTTP ${res.status}`);
         }
 
         const result = await res.json();
-        
-        // 更新内存状态
-        state.fileSha = result.content.sha;
+        const newSha = result.content.sha;
+        const newSize = result.content.size;
+
+        // 1. 更新内存状态
+        state.fileSha = newSha;
         state.originalContent = currentContent;
-        state.editingFile.sha = result.content.sha;
+        state.editingFile.sha = newSha;
+        
+        // 2. 【写入硬核缓存】 (1分钟内再次打开直接生效)
+        recentlySavedCache.set(state.editingFile.path, {
+            content: currentContent,
+            timestamp: Date.now(),
+            sha: newSha
+        });
 
-        // 1. 更新 IndexedDB 内容缓存
-        const cacheKey = `file_content_${result.content.sha}`;
-        if (window.SimpleDB) window.SimpleDB.set(cacheKey, currentContent);
+        // 3. 更新智能注册表
+        UpdatedFilesManager.set(state.editingFile.path, newSha);
 
-        // 2. 核心：调用一致性管理器更新列表缓存
-        // 这确保了你关闭编辑器后，文件列表里的该文件 SHA 和大小是最新的
-        // 从而避免了“保存后列表回滚”的问题
-        await updateGlobalCacheState('add', { // add 逻辑包含 update
+        // 4. 写入 IndexedDB (持久化)
+        if (window.SimpleDB) {
+            await window.SimpleDB.set(`file_content_${newSha}`, currentContent);
+        }
+
+        // 5. 更新列表
+        await updateGlobalCacheState('add', {
             path: state.editingFile.path,
             type: 'file',
-            sha: result.content.sha,
-            size: result.content.size,
+            sha: newSha,
+            size: newSize,
             parentPath: state.currentPath
         });
 
-        showToast('保存成功！', 'success');
         checkContentChanges();
+        showToast('已保存');
 
     } catch (e) {
-        let msg = e.message;
-        if (e.name === 'AbortError') msg = '网络超时，保存失败';
-        showToast(msg, 'error');
+        showToast('保存失败: ' + e.message, 'error');
     } finally {
-        el.editorOverlay.classList.remove('show');
         saveBtn.disabled = false;
         saveBtn.innerHTML = '<i class="fa-solid fa-check"></i>';
-        setTimeout(() => {
-             if(!saveBtn.disabled) saveBtn.innerHTML = '<i class="fa-solid fa-check"></i> <span>保存</span>';
-        }, 2000);
     }
 }
-
 
 
 
@@ -5773,37 +5745,39 @@ function copyLink(file) {
 }
 
 function copyProxyLink(file) {
-    const rawUrl = file.download_url || file.html_url.replace('github.com', 'raw.githubusercontent.com').replace('/blob/', '/');
-    const activeProxy = state.proxies[state.activeProxyIndex];
-    if (state.proxyGlobalEnable && activeProxy && activeProxy.url && activeProxy.type) {
-        let proxiedUrl = rawUrl;
-        const proxyDomain = getDomainFromUrl(activeProxy.url);
-        
-        if (activeProxy.type === 'prefix') {
-            let base = activeProxy.url;
-            if (!base.endsWith('/')) {
-                base += '/';
-            }
-            proxiedUrl = base + rawUrl;
-        } else if (activeProxy.type === 'raw_domain_replace') {
-            proxiedUrl = rawUrl.replace(/^(https?:\/\/raw\.)githubusercontent\.com(\/.*)$/i, `$1${proxyDomain}$2`);
-            if (!proxiedUrl.startsWith('http')) {
-                proxiedUrl = 'https://' + proxiedUrl;
-            }
+    const rawUrl = file.download_url || 
+                   file.html_url.replace('github.com', 'raw.githubusercontent.com').replace('/blob/', '/');
+
+    const activeProxy = (state.proxies && state.activeProxyIndex >= 0 && state.activeProxyIndex < state.proxies.length) 
+                        ? state.proxies[state.activeProxyIndex] 
+                        : null;
+
+    const isProxyEffective = state.proxyGlobalEnable && activeProxy && activeProxy.url;
+
+    if (isProxyEffective) {
+        let proxyBase = activeProxy.url.trim();
+        if (!proxyBase.endsWith('/')) {
+            proxyBase += '/';
         }
-        navigator.clipboard.writeText(proxiedUrl).then(() => {
-            const displayUrl = activeProxy.url.replace(/^https?:\/\//, '').replace(/\/$/, '');
-            showToast(`已复制当前代理链接 [${displayUrl}]`);
+        
+        const finalUrl = proxyBase + rawUrl;
+
+        navigator.clipboard.writeText(finalUrl).then(() => {
+            let domain = '';
+            try {
+                domain = new URL(proxyBase).hostname;
+            } catch (e) {
+                domain = '代理';
+            }
+            showToast(`已复制代理链接 [节点: ${domain}]`);
         }).catch(e => {
-            showToast(`复制失败: ${e.message || '应用剪切板权限没给'}`);
-            console.error(e);
+            showToast(`复制失败: ${e.message}`, 'error');
         });
     } else {
         navigator.clipboard.writeText(rawUrl).then(() => {
-            showToast('代理未开启，已复制直连 Raw 链接');
+            showToast('代理未生效，已复制直连链接', 'warning');
         }).catch(e => {
-            showToast(`复制失败: ${e.message || '应用剪切板权限没给'}`);
-            console.error(e);
+            showToast(`复制失败: ${e.message}`, 'error');
         });
     }
 }
@@ -6169,7 +6143,6 @@ async function updateGlobalCacheState(action, itemData) {
 async function modifyParentCache(parentPath, action, itemData) {
     const cacheKey = `${state.currentRepo}:${state.currentBranch}:${parentPath}`;
     
-    // 1. 获取现有列表 (优先内存，其次DB)
     let currentList = null;
     if (state.fileCache.has(cacheKey)) {
         currentList = state.fileCache.get(cacheKey);
@@ -6182,14 +6155,10 @@ async function modifyParentCache(parentPath, action, itemData) {
         } catch (e) {}
     }
 
-    // 如果还没有缓存，就不强行制造了，等下次 fetchFiles 自动处理
     if (!currentList) return;
 
     let listCopy = [...currentList];
     const { path, newPath, sha, size, type } = itemData;
-    
-    // 根据 itemData 构造文件对象 (如果在 add/rename 场景下没有传完整file对象)
-    // 这里我们尽量复用 updateGlobalCacheState 传来的完整信息，如果不够就简易构造
     const fileName = (newPath || path).split('/').pop();
     
     if (action === 'delete') {
@@ -6198,7 +6167,6 @@ async function modifyParentCache(parentPath, action, itemData) {
     else if (action === 'add') {
         const exists = listCopy.some(f => f.path === path);
         if (!exists) {
-            // 构造一个尽量完整的缓存对象，防止UI报错
             const [owner, repo] = state.currentRepo.split('/');
             const branch = state.currentBranch;
             listCopy.push({
@@ -6217,7 +6185,6 @@ async function modifyParentCache(parentPath, action, itemData) {
     else if (action === 'rename') {
         const index = listCopy.findIndex(f => f.path === path);
         if (index > -1) {
-            // 保留原有属性，仅修改关键路径信息
             listCopy[index] = {
                 ...listCopy[index],
                 name: fileName,
@@ -6228,24 +6195,23 @@ async function modifyParentCache(parentPath, action, itemData) {
         }
     }
 
-    // 2. 立即回写内存
     state.fileCache.set(cacheKey, listCopy);
     
-    // 3. 立即回写 IndexedDB (持久化)
     try {
         const existingRecord = await SimpleDB.get(cacheKey);
         await SimpleDB.set(cacheKey, {
             data: listCopy,
-            etag: existingRecord ? existingRecord.etag : null, // 保留ETag，虽然内容变了，但下次请求若304我们会再次apply补丁
+            etag: existingRecord ? existingRecord.etag : null, 
             timestamp: Date.now()
         });
     } catch (e) {}
 
-    // 4. 如果正好是当前显示的目录，立即刷新UI
     if (state.currentPath === parentPath) {
         state.files = listCopy;
-        if (typeof applyFiltersAndSort === 'function') applyFiltersAndSort();
-        if (typeof renderFileList === 'function') renderFileList();
+        state.shouldAnimateList = false;
+        applyFiltersAndSort();
+        renderFileList();
+        updateActionBar(); 
     }
 }
 
@@ -6296,12 +6262,8 @@ async function deleteSingleItem(item) {
             type: item.type 
         });
 
-        if (state.files) state.files = state.files.filter(f => f.path !== item.path);
-        if (state.displayFiles) state.displayFiles = state.displayFiles.filter(f => f.path !== item.path);
         state.selectedItems.delete(item.path);
         
-        await fetchFiles(false);
-
     } catch (error) {
         showToast(`删除失败: ${error.message}`, 'error');
         await fetchFiles(true);
@@ -7262,20 +7224,16 @@ function handleStartBatchUpload() {
     if (state.pendingUploadFiles.length === 0) return;
 
     const filesToUpload = [...state.pendingUploadFiles];
-    
     hidePreUploadModal();
-    state.pendingUploadFiles = []; // 清空暂存区
+    state.pendingUploadFiles = [];
 
-    // 打开进度面板
     el.uploadPanel.classList.remove('hidden');
     el.uploadItems.innerHTML = '';
 
-    // 渲染进度条 UI
     filesToUpload.forEach((file, index) => {
         let displayName = file.name;
-        if (displayName.length > 25) {
-            displayName = displayName.slice(0, 22) + '...';
-        }
+        if (displayName.length > 25) displayName = displayName.slice(0, 22) + '...';
+        
         const uploadItem = document.createElement('div');
         uploadItem.className = 'upload-item';
         uploadItem.innerHTML = `
@@ -7288,19 +7246,43 @@ function handleStartBatchUpload() {
                     <span class="percent-text" data-index="${index}">0%</span>
                 </div>
             </div>
-            <div class="upload-status" data-index="${index}">等待上传...</div>
+            <div class="upload-status" data-index="${index}">等待中...</div>
         `;
         el.uploadItems.appendChild(uploadItem);
     });
 
-    // === 核心修复 ===
-    // 强制检查当前视图。如果是 assets_list (版本详情)，走版本上传通道
-    if (state.currentView === 'assets_list') {
-        uploadReleaseAssetsInSequence(filesToUpload, 0);
-    } else {
-        // 否则走普通文件上传通道
-        uploadFilesInSequence(filesToUpload, 0);
-    }
+    const total = filesToUpload.length;
+    
+    const runSequence = async (idx) => {
+        if (idx >= total) {
+            setTimeout(() => el.uploadPanel.classList.add('hidden'), 1000);
+            showToast('所有文件上传完成', 'success');
+            
+            if (state.files) {
+                const patched = ConsistencyManager.apply(state.files);
+                state.files = patched;
+                applyFiltersAndSort();
+                renderFileList();
+            }
+            return;
+        }
+
+        showToast(`正在上传 (${idx + 1}/${total}): ${filesToUpload[idx].name}`, 'loading', 0);
+
+        try {
+            if (state.currentView === 'assets_list') {
+                await uploadSingleReleaseAsset(filesToUpload[idx], idx);
+            } else {
+                await uploadSingleFile(filesToUpload[idx], idx);
+            }
+        } catch (e) {
+            console.error(e);
+        }
+        
+        await runSequence(idx + 1);
+    };
+
+    runSequence(0);
 }
 
 
@@ -7645,13 +7627,17 @@ function showUnpublishMainSiteModal(repo) {
 }
 
 
+
+
 function showRenameModal(item) {
     const isRepo = typeof item.full_name === 'string';
     const extraSettingsContainer = document.getElementById('renameModalExtraSettings');
     extraSettingsContainer.innerHTML = '';
+    el.renameWarn.textContent = '';
     el.renameWarn.style.display = 'none';
-    el.renameInput.value = item.name;
+    el.renameInput.value = isRepo ? item.name : item.name;
     el.renameConfirm.disabled = true;
+    el.renameModal.classList.remove('hidden');
 
     if (isRepo) {
         el.renameTitle.querySelector('.modal-title-text').textContent = '修改仓库';
@@ -7689,7 +7675,7 @@ function showRenameModal(item) {
             
             this.disabled = true;
             this.classList.add('btn-processing');
-            this.innerHTML = '处理中 <i class="fa fa-spinner fa-spin"></i>';
+            this.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
 
             try {
                 const res = await fetch(`https://api.github.com/repos/${item.full_name}`, {
@@ -7727,7 +7713,7 @@ function showRenameModal(item) {
 
             this.disabled = true;
             this.classList.add('btn-processing');
-            this.innerHTML = '处理中 <i class="fa fa-spinner fa-spin"></i>';
+            this.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
 
             try {
                 if (item.type === 'branch') {
@@ -7758,35 +7744,51 @@ function showRenameModal(item) {
                             })).json();
                             
                             const oldPath = item.path;
-                            const parentPath = oldPath.substring(0, oldPath.lastIndexOf('/'));
+                            const parentPath = oldPath.includes('/') ? oldPath.substring(0, oldPath.lastIndexOf('/')) : '';
                             const newPath = parentPath ? `${parentPath}/${newName}` : newName;
 
-                            await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${newPath}`, { 
+                            const putRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${newPath}`, { 
                                 method: 'PUT', 
                                 headers: { Authorization: `token ${state.token}`, 'Content-Type': 'application/json' }, 
                                 body: JSON.stringify({ message: `Rename to ${newName}`, content: fileData.content, branch: state.currentBranch }) 
                             });
                             
+                            if (!putRes.ok) throw new Error('创建新文件失败');
+
+                            const putData = await putRes.json();
+
                             await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${oldPath}`, { 
                                 method: 'DELETE', 
                                 headers: { Authorization: `token ${state.token}`, 'Content-Type': 'application/json' }, 
                                 body: JSON.stringify({ message: `Delete old`, sha: fileData.sha, branch: state.currentBranch }) 
                             });
+
+                            const newItemSha = putData.content ? putData.content.sha : null;
+                            const newItemSize = putData.content ? putData.content.size : item.size;
+
+                            await updateGlobalCacheState('rename', {
+                                path: oldPath,
+                                newPath: newPath,
+                                type: item.type,
+                                sha: newItemSha,
+                                size: newItemSize
+                            });
                         }
                     }
 
-                    const oldPath = item.path;
-                    const parent = oldPath.substring(0, oldPath.lastIndexOf('/'));
-                    const newPath = parent ? `${parent}/${newName}` : newName;
+                    if (isDir || item.size > 1024 * 1024) {
+                        const oldPath = item.path;
+                        const parent = oldPath.includes('/') ? oldPath.substring(0, oldPath.lastIndexOf('/')) : '';
+                        const newPath = parent ? `${parent}/${newName}` : newName;
 
-                    await updateGlobalCacheState('rename', {
-                        path: oldPath,
-                        newPath: newPath,
-                        type: item.type
-                    });
+                        await updateGlobalCacheState('rename', {
+                            path: oldPath,
+                            newPath: newPath,
+                            type: item.type
+                        });
+                    }
                     
                     hideRenameModal();
-                    fetchFiles(false);
                     showToast('重命名成功');
                 }
             } catch (e) {
@@ -7801,9 +7803,10 @@ function showRenameModal(item) {
         };
     }
 
-    el.renameModal.classList.remove('hidden');
     uiStateStack.push(hideRenameModal);
 }
+
+
 
 function hideCreateFolderModal() {
     el.createFolderModal.classList.add('hidden');
@@ -7856,8 +7859,6 @@ function showCreateFolderModal() {
 
             showToast(`已创建文件夹: ${name}`);
             hideCreateFolderModal();
-            state.shouldAnimateList = true;
-            fetchFiles(false);
             
         } catch (e) {
             showToast(`失败: ${e.message}`);
@@ -7922,8 +7923,6 @@ function showCreateFileModal() {
 
             showToast(`已创建文件: ${name}`);
             hideCreateFileModal();
-            state.shouldAnimateList = true;
-            fetchFiles(false);
             
         } catch (e) {
             showToast(`失败: ${e.message}`);
@@ -8311,79 +8310,47 @@ function updateProxySettingsUI() {
 }
 
 async function testProxyEnhanced(proxyUrl) {
-
-//修改单个代理的测试轮数
-    const REPEAT_COUNT = 4;
     const TIMEOUT_MS = 5000;
+    const ROUNDS = 3;
+    
+    if (!proxyUrl) return { ok: false, ms: null };
 
-    const _singleTest = async (url, type) => {
-        let proxiedTestUrl = '';
-        const proxyInputUrl = (url || '').trim();
-        const proxyDomain = getDomainFromUrl(proxyInputUrl);
-
-        if (!proxyInputUrl) return { ok: false, ms: null, err: 'URL为空', type };
-
-        if (type === 'prefix') {
-            let base = proxyInputUrl;
-            if (!base.endsWith('/')) base += '/';
-            proxiedTestUrl = base + PROXY_TEST_URL;
-        } else if (type === 'raw_domain_replace') {
-            proxiedTestUrl = PROXY_TEST_URL.replace(/^(https?:\/\/raw\.)githubusercontent\.com(\/.*)$/i, `$1${proxyDomain}$2`);
-            if (!proxiedTestUrl.startsWith('http')) proxiedTestUrl = 'https://' + proxiedTestUrl;
-        } else {
-            return { ok: false, ms: null, err: '未知类型', type };
-        }
-
-        const start = performance.now();
-        try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
-            const r = await fetch(proxiedTestUrl, { method: 'GET', cache: 'no-store', signal: controller.signal });
-            clearTimeout(timeoutId);
-            if (!r.ok) return { ok: false, ms: null, err: `HTTP ${r.status}`, type };
-            await r.text();
-            return { ok: true, ms: Math.round(performance.now() - start), err: null, type };
-        } catch (e) {
-            let errorMsg = '连接失败';
-            if (e.name === 'AbortError') errorMsg = '连接超时';
-            return { ok: false, ms: null, err: errorMsg, type };
-        }
-    };
-
-    let bestType = null;
-    let finalError = '所有模式均测试失败';
-
-    const replaceResult = await _singleTest(proxyUrl, 'raw_domain_replace');
-    if (replaceResult.ok) {
-        bestType = 'raw_domain_replace';
-    } else {
-        finalError = replaceResult.err;
-        const prefixResult = await _singleTest(proxyUrl, 'prefix');
-        if (prefixResult.ok) {
-            bestType = 'prefix';
-        } else {
-            finalError = prefixResult.err;
-        }
-    }
-
-    if (!bestType) {
-        return { ok: false, ms: null, type: null, err: finalError };
-    }
+    let baseUrl = proxyUrl;
+    if (!baseUrl.endsWith('/')) baseUrl += '/';
+    const targetUrl = baseUrl + PROXY_TEST_URL;
 
     const latencies = [];
-    for (let i = 0; i < REPEAT_COUNT; i++) {
-        const result = await _singleTest(proxyUrl, bestType);
-        if (result.ok) {
-            latencies.push(result.ms);
+
+    for (let i = 0; i < ROUNDS; i++) {
+        const start = performance.now();
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+        
+        try {
+            const cacheBuster = (targetUrl.includes('?') ? '&' : '?') + `_t=${Date.now()}_${i}`;
+            const res = await fetch(targetUrl + cacheBuster, { 
+                method: 'GET', 
+                cache: 'no-store', 
+                signal: controller.signal 
+            });
+            
+            clearTimeout(timeoutId);
+            
+            if (res.ok) {
+                await res.text();
+                latencies.push(performance.now() - start);
+            }
+        } catch (e) {
+            clearTimeout(timeoutId);
         }
     }
 
-    if (latencies.length > 0) {
-        const bestLatency = Math.min(...latencies);
-        return { ok: true, ms: bestLatency, type: bestType, err: null };
-    } else {
-        return { ok: false, ms: null, type: bestType, err: '连接不稳定' };
+    if (latencies.length === 0) {
+        return { ok: false, ms: null, err: '连接失败' };
     }
+
+    const average = latencies.reduce((a, b) => a + b, 0) / latencies.length;
+    return { ok: true, ms: Math.round(average), err: null };
 }
 
 function renderProxyList() {
@@ -8704,17 +8671,14 @@ async function testAllProxies(showInitialToast = true) {
 
 async function importProxiesFromUrl() {
     const importButton = el.importBtn;
-    const importIcon = importButton.querySelector('.fa-cloud-download');
+    const importIcon = importButton.querySelector('i');
     const importSpinner = el.importSpinner;
 
     importButton.disabled = true;
     if (importIcon) importIcon.classList.add('hidden');
     if (importSpinner) importSpinner.classList.remove('hidden');
     
-    // 清空现有代理（可选，如果你希望导入时覆盖旧的，取消下面这行的注释）
-    // state.proxies = []; 
-
-    showToast('正在获取云端代理列表...', 'info');
+    showToast('正在获取云端节点...', 'info');
 
     try {
         const PROXY_PREFIXES = [
@@ -8746,45 +8710,36 @@ async function importProxiesFromUrl() {
             }
         }
 
-        if (!success) {
-            throw new Error('无法连接到更新服务器，请检查网络');
-        }
+        if (!success) throw new Error('无法连接到节点源');
         
         const urls = responseText.split('\n').map(url => url.trim()).filter(url => url && url.length > 5);
         
         if (urls.length > 0) {
-            // 去重合并
             let addedCount = 0;
             urls.forEach(u => {
-                // 移除末尾斜杠进行比较
                 const cleanU = u.replace(/\/$/, '');
                 const exists = state.proxies.some(p => p.url && p.url.replace(/\/$/, '') === cleanU);
                 if (!exists) {
-                    state.proxies.push({ url: u, status: null, latency: null, type: null });
+                    state.proxies.push({ url: u, status: null, latency: null });
                     addedCount++;
                 }
             });
 
             if (addedCount > 0) {
+                if (state.activeProxyIndex === -1) {
+                    state.activeProxyIndex = Math.floor(Math.random() * state.proxies.length);
+                }
                 saveProxyConfig();
                 renderProxyList();
-                showToast(`成功导入 ${addedCount} 个新节点，正在测速...`);
-                
-                // 关键修改：导入后立即调用智能优选逻辑
-                // 这会自动测试所有节点并选中最快的一个
-                await findAndSetBestProxy(true); 
+                showToast(`已更新 ${addedCount} 个节点`);
+                findAndSetBestProxy(true);
             } else {
-                showToast('列表已是最新，无新节点添加');
-                // 即使没有新节点，也重新优选一次
-                await findAndSetBestProxy(true);
+                showToast('节点列表已是最新');
             }
-        } else {
-            showToast('获取的代理列表为空', 'error');
         }
 
     } catch (error) {
-        showToast(`导入失败: ${error.message}`, 'error');
-        console.error("导入时发生错误:", error);
+        showToast(`更新失败: ${error.message}`, 'error');
     } finally {
         importButton.disabled = false;
         if (importIcon) importIcon.classList.remove('hidden');
@@ -8793,101 +8748,109 @@ async function importProxiesFromUrl() {
 }
 
 
+function initProxySystem() {
+    state.activeProxyIndex = parseInt(localStorage.getItem('active_proxy_index') || '-1');
+    state.proxyGlobalEnable = JSON.parse(localStorage.getItem('proxy_global_enable') || 'true');
+    state.autoSelectProxy = JSON.parse(localStorage.getItem('proxy_auto_select') || 'true');
 
-
-async function findAndSetBestProxy(manual = false) {
-    const autoSelectButton = el.proxyAutoSelectToggle;
-    
-    // 如果是手动点击或导入触发，锁定按钮防止重复操作
-    if (manual) {
-        autoSelectButton.disabled = true;
-    }
-
-    // 1. 首次启动：如果没有代理，先自动导入
     if (state.proxies.length === 0) {
-        if (!manual) showToast('首次初始化：正在获取加速节点...', 'info');
-        try {
-            const response = await fetch(PROXY_TEST_URL + '?t=' + Date.now(), { cache: 'no-store' });
-            if (!response.ok) throw new Error(`无法连接代理源`);
-            const text = await response.text();
-            const urls = text.split('\n').map(url => url.trim()).filter(url => url && url.length > 5);
-            
-            if (urls.length > 0) {
-                state.proxies = urls.map(url => ({ url, status: null, latency: null, type: null }));
-                saveProxyConfig();
-                renderProxyList();
-            } else {
-                 throw new Error("代理源内容为空");
+        importProxiesFromUrl();
+    } else {
+        if (state.activeProxyIndex === -1 || state.activeProxyIndex >= state.proxies.length) {
+            state.activeProxyIndex = Math.floor(Math.random() * state.proxies.length);
+            saveProxyConfig();
+        }
+
+        const lastCheck = parseInt(localStorage.getItem('last_proxy_check_time') || '0');
+        const now = Date.now();
+        const ONE_DAY = 24 * 60 * 60 * 1000;
+
+        if (now - lastCheck > ONE_DAY) {
+            findAndSetBestProxy(true);
+        } else {
+            const current = state.proxies[state.activeProxyIndex];
+            if (current) {
+                testProxyEnhanced(current.url).then(res => {
+                    if (!res.ok) {
+                        findAndSetBestProxy(true);
+                    }
+                });
             }
-        } catch (error) {
-            showToast(`初始化代理失败: ${error.message}`, 'error');
-            if (manual) autoSelectButton.disabled = false;
-            return;
         }
     }
-    
-    // 2. 开始测速逻辑
-    // 将状态设为 testing 以便 UI 显示加载圈
-    state.proxies.forEach(p => p.status = 'testing');
-    renderProxyList();
+    updateProxyUI();
+}
 
-    // 分批并行测速（每批 10 个，防止浏览器请求过多卡死）
-    const BATCH_SIZE = 10;
+
+
+
+
+
+async function findAndSetBestProxy(isSilent = false) {
+    if (state.proxies.length === 0) {
+        if (!isSilent) importProxiesFromUrl();
+        return;
+    }
+
+    if (!isSilent) {
+        el.proxyTestAllBtn.disabled = true;
+        const icon = el.proxyTestAllBtn.querySelector('i');
+        if(icon) icon.className = 'fa fa-spinner fa-spin';
+        showToast(`开始测速 (共${state.proxies.length}个节点)...`);
+    }
+
+    const BATCH_SIZE = 4;
     const allProxies = state.proxies;
     
     for (let i = 0; i < allProxies.length; i += BATCH_SIZE) {
         const batch = allProxies.slice(i, i + BATCH_SIZE);
+        
         const batchPromises = batch.map(async (proxy) => {
-            // 使用 enhanced 测试函数，它会自动判断是 path 还是 domain 替换模式
+            proxy.status = 'testing';
             const result = await testProxyEnhanced(proxy.url);
-            
-            // 更新当前代理对象状态
             proxy.latency = result.ms;
             proxy.status = result.ok ? 'ok' : 'fail';
             proxy.err = result.err;
-            proxy.type = result.type;
-            
             return proxy;
         });
         
-        // 等待当前批次完成
         await Promise.all(batchPromises);
-        // 实时刷新列表，让用户看到进度
-        renderProxyList();
+        
+        if (!el.proxySettingsModal.classList.contains('hidden')) {
+            renderProxyList();
+        }
     }
 
-    // 3. 优选逻辑
-    // 筛选出所有成功的代理
     const validProxies = state.proxies.filter(p => p.status === 'ok' && p.latency !== null);
-
-    if (validProxies.length === 0) {
-        showToast('所有代理节点测试失败，请检查网络连接', 'error');
-    } else {
-        // 按延迟排序（从小到大）
+    
+    if (validProxies.length > 0) {
         validProxies.sort((a, b) => a.latency - b.latency);
-        
-        // 找到最优代理在原始数组中的索引
         const bestProxy = validProxies[0];
         const bestIndex = state.proxies.indexOf(bestProxy);
 
         if (bestIndex !== -1) {
-            // 只有当当前选中的不是最优，或者还没选中时，才切换
-            if (state.activeProxyIndex !== bestIndex) {
-                setActiveProxy(bestIndex, false); // false 表示不显示"已切换"的Toast，下面统一显示
-            }
+            const currentProxy = state.proxies[state.activeProxyIndex];
             
-            if (manual) {
-                showToast(`已优选节点: ${getDomainFromUrl(bestProxy.url)} (延迟: ${bestProxy.latency}ms)`, 'success');
-            } else {
-                console.log(`自动优选: 切换至 ${bestProxy.url}`);
+            const isCurrentInvalid = !currentProxy || currentProxy.status !== 'ok' || currentProxy.latency > 1500;
+            
+            if (state.autoSelectProxy || isCurrentInvalid) {
+                if (state.activeProxyIndex !== bestIndex) {
+                    setActiveProxy(bestIndex, !isSilent);
+                }
             }
         }
+    } else {
+        if (!isSilent) showToast('所有节点均无法连接', 'error');
     }
-    
-    // 保存最终状态
+
+    localStorage.setItem('last_proxy_check_time', Date.now().toString());
     saveProxyConfig();
-    
-    if (manual) autoSelectButton.disabled = false;
+
+    if (!isSilent) {
+        el.proxyTestAllBtn.disabled = false;
+        const icon = el.proxyTestAllBtn.querySelector('i');
+        if(icon) icon.className = 'fa-solid fa-bolt';
+    }
 }
 
 
@@ -13762,27 +13725,16 @@ async function init() {
         ]).then(() => {
             state.myRepos = [...state.repos];
             
-            // 延迟执行次要任务，不阻塞首屏
             setTimeout(() => {
-                // 1. 代理优选
-                if (state.proxies.length === 0 || state.autoSelectProxy) {
-                    findAndSetBestProxy(); 
-                } else {
-                    state.activeProxyIndex = parseInt(localStorage.getItem('active_proxy_index') || '0');
-                    state.proxyGlobalEnable = JSON.parse(localStorage.getItem('proxy_global_enable') || 'true');
-                    saveProxyConfig();
-                }
-                
-                // 2. 检查更新
-                checkServerInfo();
+    initProxySystem(); 
+    
+    checkServerInfo();
 
-                // 3. === 激活后台静默预加载 ===
-                // 延迟 3 秒启动，完全不影响首屏交互体验
-                setTimeout(() => {
-                    startBackgroundPreloading();
-                }, 3000);
+    setTimeout(() => {
+        startBackgroundPreloading();
+    }, 3000);
 
-            }, 1000);
+}, 1000);
         });
     } else {
         showAuth();
@@ -14202,61 +14154,48 @@ async function unzipFile(file) {
         const [owner, repo] = state.currentRepo.split('/');
         
         try {
-            showToast('正在下载压缩包...');
+            showToast('正在下载压缩包...', 'loading', 0);
+            
             const response = await fetch(getProxiedUrl(file.download_url));
-            if (!response.ok) {
-                throw new Error(`下载压缩包失败: ${response.statusText}`);
-            }
+            if (!response.ok) throw new Error(`下载失败: ${response.status}`);
             const blob = await response.blob();
 
-            showToast('正在读取压缩包内容...');
-try {
-    await LibraryLoader.load(LIBS.JSZIP, 'JSZip');
-} catch (e) {
-    throw new Error('加载解压组件失败');
-}
-const zip = await JSZip.loadAsync(blob);
+            showToast('正在解析 ZIP...', 'loading', 0);
+            const zip = await JSZip.loadAsync(blob);
             const filesInZip = Object.values(zip.files).filter(item => !item.dir);
             const totalFiles = filesInZip.length;
             let uploadedCount = 0;
 
             if (totalFiles === 0) {
-                showToast('压缩包为空或无法读取');
+                showToast('压缩包为空', 'error');
                 return;
             }
             
-            showToast(`开始上传 ${totalFiles} 个文件...`);
+            const currentDir = state.currentPath || '';
 
             for (const zipEntry of filesInZip) {
                 const contentBase64 = await zipEntry.async('base64');
-                const entryPath = zipEntry.name;
-                const fullPath = state.currentPath ? `${state.currentPath}${entryPath}` : entryPath;
+                const entryName = zipEntry.name;
+                const fullPath = currentDir + entryName;
                 
                 const uploadUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${fullPath}`;
                 
-                let existingFileSha = null;
+                let sha = null;
                 try {
                     const checkRes = await fetch(uploadUrl + `?ref=${state.currentBranch}`, {
                          headers: { 'Authorization': `token ${state.token}` }
                     });
-                    if (checkRes.ok) {
-                        existingFileSha = (await checkRes.json()).sha;
-                    }
-                } catch (e) {
-                }
+                    if (checkRes.ok) sha = (await checkRes.json()).sha;
+                } catch (e) {}
 
                 const body = {
-                    message: `Unzip ${file.name}: add ${entryPath}`,
+                    message: `Unzip ${file.name}`,
                     content: contentBase64,
                     branch: state.currentBranch,
                 };
+                if (sha) body.sha = sha;
 
-                if (existingFileSha) {
-                    body.sha = existingFileSha;
-                    body.message = `Unzip ${file.name}: update ${entryPath}`;
-                }
-
-                const uploadResponse = await fetch(uploadUrl, {
+                const upRes = await fetch(uploadUrl, {
                     method: 'PUT',
                     headers: {
                         'Authorization': `token ${state.token}`,
@@ -14265,32 +14204,51 @@ const zip = await JSZip.loadAsync(blob);
                     body: JSON.stringify(body)
                 });
 
-                if (!uploadResponse.ok) {
-                    console.error(`上传失败: ${fullPath}`, await uploadResponse.json());
-                    showToast(`文件 ${entryPath} 上传失败，已跳过。`);
-                } else {
+                if (upRes.ok) {
+                    const resData = await upRes.json();
+                    let entryParent = '';
+                    if (entryName.includes('/')) {
+                        entryParent = currentDir + entryName.substring(0, entryName.lastIndexOf('/') + 1);
+                    } else {
+                        entryParent = currentDir;
+                    }
+
+                    await updateGlobalCacheState('add', {
+                        path: fullPath,
+                        type: 'file',
+                        sha: resData.content.sha,
+                        size: resData.content.size,
+                        parentPath: entryParent
+                    });
+                    
                     uploadedCount++;
-                    showToast(`正在上传... (${uploadedCount}/${totalFiles})`);
+                    showToast(`解压进度: ${uploadedCount}/${totalFiles}`, 'loading', 0);
                 }
             }
 
-            showToast(`解压完成！成功上传 ${uploadedCount} 个文件。`);
-            state.shouldAnimateList = true;
-            fetchFiles(true);
+            showToast(`解压完成，共 ${uploadedCount} 个文件`, 'success');
+            
+            // 仅仅重新应用补丁并渲染，不触发网络请求
+            if (state.files) {
+                const patched = ConsistencyManager.apply(state.files);
+                state.files = patched;
+                state.shouldAnimateList = false;
+                applyFiltersAndSort();
+                renderFileList();
+            }
 
         } catch (error) {
-            console.error('解压过程中发生错误:', error);
-            showToast(`解压失败: ${error.message}`);
+            showToast(`解压出错: ${error.message}`, 'error');
         }
     };
 
     showDeleteModal(
-        null,
-        false,
-        '确认解压',
-        `确定要将 "${escapeHtml(file.name)}" 解压到当前目录吗？同名文件将被覆盖。`,
-        confirmUnzip,
-        '确认解压',
+        null, 
+        false, 
+        '确认解压', 
+        `将 "${file.name}" 解压到当前目录？(同名文件将被覆盖)`, 
+        confirmUnzip, 
+        '解压', 
         'btn-primary'
     );
 }
