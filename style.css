@@ -2,7 +2,7 @@
 
 /** ---------------- 全局与通用样式 ---------------- */
 
-/** 所有元素通用重置 */
+/** 所有元素通用 */
 * {
     box-sizing: border-box;
     -webkit-tap-highlight-color: transparent;
